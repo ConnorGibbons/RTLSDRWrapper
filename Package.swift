@@ -42,7 +42,8 @@ let package = Package(
                 .unsafeFlags(["-I/opt/homebrew/include/libusb-1.0"])
             ],
             linkerSettings: [
-                .linkedLibrary("usb-1.0")
+                .linkedLibrary("usb-1.0"),
+                .unsafeFlags(["-L/opt/homebrew/lib"])
             ]
         ),
         .testTarget(
