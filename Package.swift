@@ -12,13 +12,12 @@ let package = Package(
     ],
     targets: [
         .systemLibrary(
-            name: "libusb"
+            name: "libusb",
+            pkgConfig: "libusb-1.0"
         ),
         .target(
             name: "CRTLSDR",
-            dependencies: [
-                .target(name: "libusb")
-            ],
+            dependencies: ["libusb"],
             path: "./Sources/CRTLSDR",
             exclude: [
                 "src/rtl_adsb.c",

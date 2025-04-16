@@ -1,4 +1,5 @@
 module libusb [system] {
     header "libusb.h"
+    link "usb-1.0"
     export *
 }
