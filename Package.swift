@@ -15,7 +15,36 @@ let package = Package(
         // Targets are the basic building blocks of a package, defining a module or a test suite.
         // Targets can depend on other targets in this package and products from dependencies.
         .target(
-            name: "RTLSDRWrapper"),
+            name: "RTLSDRWrapper",
+            dependencies: ["CRTLSDR"]
+        ),
+        .target(
+            name: "CRTLSDR",
+            dependencies: [],
+            path: "./Sources/CRTLSDR",
+            exclude: [
+                "src/rtl_adsb.c",
+                "src/rtl_biast.c",
+                "src/rtl_eeprom.c",
+                "src/rtl_fm.c",
+                "src/rtl_power.c",
+                "src/rtl_sdr.c",
+                "src/rtl_tcp.c",
+                "src/rtl_test.c",
+                "src/CMakeLists.txt",
+                "src/Makefile.am",
+                "src/rtlsdr.rc.in"
+            ],
+            sources: ["./src"],
+            publicHeadersPath: "include",
+            cSettings: [
+                .headerSearchPath("./CRTLSDR/src"),
+                .unsafeFlags(["-I/opt/homebrew/include/libusb-1.0"])
+            ],
+            linkerSettings: [
+                .linkedLibrary("usb-1.0")
+            ]
+        ),
         .testTarget(
             name: "RTLSDRWrapperTests",
             dependencies: ["RTLSDRWrapper"]
