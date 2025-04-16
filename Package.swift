@@ -19,8 +19,16 @@ let package = Package(
             dependencies: ["CRTLSDR"]
         ),
         .target(
+            name: "CLIBUSB",
+            path: "./Sources/CLIBUSB",
+            publicHeadersPath: ".",
+            linkerSettings: [
+                .unsafeFlags(["-L$(SRCROOT)/Sources/CLIBUSB", "-lusb-1.0"])
+            ]
+        ),
+        .target(
             name: "CRTLSDR",
-            dependencies: [],
+            dependencies: ["CLIBUSB"],
             path: "./Sources/CRTLSDR",
             exclude: [
                 "src/rtl_adsb.c",
