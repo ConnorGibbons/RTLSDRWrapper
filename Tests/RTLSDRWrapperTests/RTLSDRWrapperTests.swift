@@ -1,7 +1,8 @@
 import Testing
 @testable import RTLSDRWrapper
+import CRTLSDR
 
 @Test func example() async throws {
     // Write your test here and use APIs like `#expect(...)` to check expected conditions.
-    print(SDRProbe.getDeviceCount())
+    #expect( SDRProbe.getDeviceCount() == rtlsdr_get_device_count() )
 }
