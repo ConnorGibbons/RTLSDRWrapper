@@ -1,23 +1,28 @@
 // swift-tools-version: 6.1
-// The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
 
 let package = Package(
     name: "RTLSDRWrapper",
     products: [
-        .library(
-            name: "RTLSDRWrapper",
-            targets: ["RTLSDRWrapper"]),
+        .library(name: "RTLSDRWrapper", targets: ["RTLSDRWrapper"]),
     ],
     targets: [
-        .systemLibrary(
-            name: "libusb",
-            pkgConfig: "libusb-1.0"
+        .target(
+            name: "CLIBUSB",
+            path: "Sources/CLIBUSB",
+            exclude: ["libusb-1.0.a"],
+            sources: ["placeholder.c"],
+            linkerSettings: [
+                .unsafeFlags(["-L./Sources/CLIBUSB", "-lusb-1.0"]),
+                .linkedFramework("IOKit", .when(platforms: [.macOS])),
+                .linkedFramework("CoreFoundation", .when(platforms: [.macOS])),
+                .linkedFramework("Security", .when(platforms: [.macOS]))
+            ]
         ),
         .target(
             name: "CRTLSDR",
-            dependencies: ["libusb"],
+            dependencies: ["CLIBUSB"],
             path: "./Sources/CRTLSDR",
             exclude: [
                 "src/rtl_adsb.c",
@@ -37,8 +42,6 @@ let package = Package(
             cSettings: [
                 .headerSearchPath("src"),
                 .define("HAVE_LIBUSB", to: "1")
-            ],
-            linkerSettings: [
             ]
         ),
         .target(
@@ -51,4 +54,3 @@ let package = Package(
         ),
     ]
 )
-        
