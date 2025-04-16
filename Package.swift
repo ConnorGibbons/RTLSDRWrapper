@@ -19,7 +19,7 @@ let package = Package(
             path: "./Sources/CLIBUSB",
             publicHeadersPath: ".",
             linkerSettings: [
-                .unsafeFlags(["-L/Sources/CLIBUSB/libusb-1.0.a"])
+                .unsafeFlags(["./Sources/CLIBUSB/libusb-1.0.a"])
             ]
         ),
         .target(
@@ -42,8 +42,7 @@ let package = Package(
             sources: ["./src"],
             publicHeadersPath: "include",
             cSettings: [
-                .headerSearchPath("./src"),
-                .unsafeFlags(["-I/opt/homebrew/include/libusb-1.0"])
+                .headerSearchPath("src")
             ],
             linkerSettings: [
             ]
