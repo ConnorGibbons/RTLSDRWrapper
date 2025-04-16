@@ -8,21 +8,10 @@ let package = Package(
         .library(name: "RTLSDRWrapper", targets: ["RTLSDRWrapper"]),
     ],
     targets: [
-        .target(
-            name: "CLIBUSB",
-            path: "Sources/CLIBUSB",
-            exclude: ["libusb-1.0.a"],
-            sources: ["placeholder.c"],
-            linkerSettings: [
-                .unsafeFlags(["-L./Sources/CLIBUSB", "-lusb-1.0"]),
-                .linkedFramework("IOKit", .when(platforms: [.macOS])),
-                .linkedFramework("CoreFoundation", .when(platforms: [.macOS])),
-                .linkedFramework("Security", .when(platforms: [.macOS]))
-            ]
-        ),
+        .binaryTarget(name: "libusb", path: "./XCFrameworks/libusb.xcframework"),
         .target(
             name: "CRTLSDR",
-            dependencies: ["CLIBUSB"],
+            dependencies: ["libusb"],
             path: "./Sources/CRTLSDR",
             exclude: [
                 "src/rtl_adsb.c",
