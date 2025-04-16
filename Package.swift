@@ -30,7 +30,12 @@ let package = Package(
             publicHeadersPath: "include",
             cSettings: [
                 .headerSearchPath("src"),
-                .define("HAVE_LIBUSB", to: "1")
+                .define("HAVE_LIBUSB", to: "1"),
+            ],
+            linkerSettings: [
+                .linkedFramework("IOKit", .when(platforms: [.macOS])),
+                .linkedFramework("CoreFoundation", .when(platforms: [.macOS])),
+                .linkedFramework("Security", .when(platforms: [.macOS]))
             ]
         ),
         .target(
