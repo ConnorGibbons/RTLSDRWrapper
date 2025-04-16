@@ -35,7 +35,7 @@ let package = Package(
             publicHeadersPath: "include",
             cSettings: [
                 .headerSearchPath("src"),
-                .headerSearchPath("../../CLIBUSB/include/libusb-1.0")
+                .headerSearchPath("../CLIBUSB")
             ],
             linkerSettings: [
                 .unsafeFlags(["Sources/CLIBUSB/libusb-1.0.a"])
