@@ -6,17 +6,25 @@ import PackageDescription
 let package = Package(
     name: "RTLSDRWrapper",
     products: [
-        // Products define the executables and libraries a package produces, making them visible to other packages.
         .library(
             name: "RTLSDRWrapper",
             targets: ["RTLSDRWrapper"]),
     ],
     targets: [
-        // Targets are the basic building blocks of a package, defining a module or a test suite.
-        // Targets can depend on other targets in this package and products from dependencies.
+        .target(
+            name: "CLIBUSB",
+            dependencies: [],
+            // Assuming libusb.h is in Sources/CLIBUSB/include
+            path: "Sources/CLIBUSB",
+            exclude: ["libusb-1.0.a"],
+            sources: [],
+            publicHeadersPath: "include",
+            cSettings: [],
+            linkerSettings: []
+        ),
         .target(
             name: "CRTLSDR",
-            dependencies: [],
+            dependencies: ["CLIBUSB"],
             path: "./Sources/CRTLSDR",
             exclude: [
                 "src/rtl_adsb.c",
@@ -29,16 +37,20 @@ let package = Package(
                 "src/rtl_test.c",
                 "src/CMakeLists.txt",
                 "src/Makefile.am",
-                "src/rtlsdr.rc.in"
+                "src/rtlsdr.rc.in",
             ],
             sources: ["src"],
             publicHeadersPath: "include",
             cSettings: [
                 .headerSearchPath("src"),
-                .headerSearchPath("../CLIBUSB")
+                .define("HAVE_LIBUSB", to: "1")
             ],
             linkerSettings: [
-                .unsafeFlags(["Sources/CLIBUSB/libusb-1.0.a"])
+                //.unsafeFlags(["./Sources/CLIBUSB/libusb-1.0.a"],
+                 .unsafeFlags(["-L./Sources/CLIBUSB", "-lusb-1.0"]),
+                 .linkedFramework("IOKit", .when(platforms: [.macOS])),
+                 .linkedFramework("CoreFoundation", .when(platforms: [.macOS, .iOS])),
+                 // .linkedLibrary("objc", .when(platforms: [.macOS, .iOS]))
             ]
         ),
         .target(
