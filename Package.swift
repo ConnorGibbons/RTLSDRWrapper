@@ -15,15 +15,11 @@ let package = Package(
         // Targets are the basic building blocks of a package, defining a module or a test suite.
         // Targets can depend on other targets in this package and products from dependencies.
         .target(
-            name: "RTLSDRWrapper",
-            dependencies: ["CRTLSDR"]
-        ),
-        .target(
             name: "CLIBUSB",
             path: "./Sources/CLIBUSB",
             publicHeadersPath: ".",
             linkerSettings: [
-                .unsafeFlags(["-L$(SRCROOT)/Sources/CLIBUSB", "-lusb-1.0"])
+                .unsafeFlags(["-L/Sources/CLIBUSB", "-lusb-1.0"])
             ]
         ),
         .target(
@@ -50,9 +46,11 @@ let package = Package(
                 .unsafeFlags(["-I/opt/homebrew/include/libusb-1.0"])
             ],
             linkerSettings: [
-                .linkedLibrary("usb-1.0"),
-                .unsafeFlags(["-L/opt/homebrew/lib"])
             ]
+        ),
+        .target(
+            name: "RTLSDRWrapper",
+            dependencies: ["CRTLSDR"]
         ),
         .testTarget(
             name: "RTLSDRWrapperTests",

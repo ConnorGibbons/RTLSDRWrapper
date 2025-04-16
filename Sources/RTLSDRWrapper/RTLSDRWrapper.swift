@@ -6,5 +6,4 @@ public enum SDRProbe {
         return CRTLSDR.rtlsdr_get_device_count()
     }
     
-    
 }
