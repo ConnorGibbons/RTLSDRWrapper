@@ -3,7 +3,7 @@
 
 import CRTLSDR
 
-enum SDRProbe {
+public enum SDRProbe {
     func getDeviceCount() -> UInt32 {
         return CRTLSDR.rtlsdr_get_device_count()
     }

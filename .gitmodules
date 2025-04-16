@@ -1,3 +1,0 @@
-[submodule "Sources/CRTLSDR"]
-	path = Sources/CRTLSDR
-	url = https://github.com/steve-m/librtlsdr.git
