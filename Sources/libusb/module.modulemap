@@ -1,0 +1,4 @@
+module libusb [system] {
+    header "libusb.h"
+    export *
+}

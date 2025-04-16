@@ -11,20 +11,14 @@ let package = Package(
             targets: ["RTLSDRWrapper"]),
     ],
     targets: [
-        .target(
-            name: "CLIBUSB",
-            dependencies: [],
-            // Assuming libusb.h is in Sources/CLIBUSB/include
-            path: "Sources/CLIBUSB",
-            exclude: ["libusb-1.0.a"],
-            sources: [],
-            publicHeadersPath: "include",
-            cSettings: [],
-            linkerSettings: []
+        .systemLibrary(
+            name: "libusb"
         ),
         .target(
             name: "CRTLSDR",
-            dependencies: ["CLIBUSB"],
+            dependencies: [
+                .target(name: "libusb")
+            ],
             path: "./Sources/CRTLSDR",
             exclude: [
                 "src/rtl_adsb.c",
@@ -46,11 +40,6 @@ let package = Package(
                 .define("HAVE_LIBUSB", to: "1")
             ],
             linkerSettings: [
-                //.unsafeFlags(["./Sources/CLIBUSB/libusb-1.0.a"],
-                 .unsafeFlags(["-L./Sources/CLIBUSB", "-lusb-1.0"]),
-                 .linkedFramework("IOKit", .when(platforms: [.macOS])),
-                 .linkedFramework("CoreFoundation", .when(platforms: [.macOS, .iOS])),
-                 // .linkedLibrary("objc", .when(platforms: [.macOS, .iOS]))
             ]
         ),
         .target(
@@ -63,3 +52,4 @@ let package = Package(
         ),
     ]
 )
+        
