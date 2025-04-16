@@ -39,7 +39,6 @@ let package = Package(
             ],
             linkerSettings: [
                 .unsafeFlags(["Sources/CLIBUSB/libusb-1.0.a"])
-                
             ]
         ),
         .target(
