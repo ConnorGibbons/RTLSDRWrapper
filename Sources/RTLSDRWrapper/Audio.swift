@@ -57,12 +57,13 @@ public class AudioPlayer {
         player.stop()
         engine.stop()
     }
+    
+    
 }
 
 
 func writeAndPlaySineWAV() {
     let sampleRate = 48000
-    let duration = 1.0
     let samples = (0..<sampleRate).map { i in
         sin(2.0 * .pi * 440.0 * Double(i) / Double(sampleRate))
     }
@@ -98,4 +99,18 @@ func writeAndPlaySineWAV() {
     } catch {
         print("WAV write/playback error: \(error)")
     }
+}
+
+public func testAudioPlayerWithSineTone() {
+    let sampleRate: Double = 48000
+    let frequency: Double = 440 // A4
+    let duration: Double = 2.0 // seconds
+
+    let sampleCount = Int(sampleRate * duration)
+    let samples = (0..<sampleCount).map { i in
+        Float(sin(2.0 * .pi * frequency * Double(i) / sampleRate))
+    }
+
+    let player = AudioPlayer()
+    player.play(samples: samples, sampleRate: sampleRate)
 }
