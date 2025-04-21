@@ -45,13 +45,17 @@ public class AudioPlayer {
             print("Failed to create buffer")
             return
         }
+        
+        let sem = DispatchSemaphore(value: 0)
 
         player.scheduleBuffer(buffer, at: nil, options: .interrupts) {
             print("Playback completed")
+            sem.signal()
         }
         
         print("Starting playback...")
         player.play()
+        sem.wait()
     }
 
     public func stop() {
