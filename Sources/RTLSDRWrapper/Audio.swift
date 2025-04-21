@@ -26,7 +26,7 @@ public class AudioPlayer {
     private let engine = AVAudioEngine()
     private let player = AVAudioPlayerNode()
     
-    init() {
+    public init() {
         engine.attach(player)
         let format = AVAudioFormat(standardFormatWithSampleRate: 48000, channels: 1)!
         engine.connect(player, to: engine.mainMixerNode, format: format)
@@ -39,7 +39,7 @@ public class AudioPlayer {
         }
     }
 
-    func play(samples: [Float], sampleRate: Double = 48000.0) {
+    public func play(samples: [Float], sampleRate: Double = 48000.0) {
         guard let buffer = createAudioPCMBuffer(samples: samples, sampleRate: sampleRate) else {
             print("Failed to create buffer")
             return
@@ -53,7 +53,7 @@ public class AudioPlayer {
         player.play()
     }
 
-    func stop() {
+    public func stop() {
         player.stop()
         engine.stop()
     }
