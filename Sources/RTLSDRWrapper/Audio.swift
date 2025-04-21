@@ -7,7 +7,7 @@
 import AVFoundation
 
 func createAudioPCMBuffer(samples: [Float], sampleRate: Double) -> AVAudioPCMBuffer? {
-    let frameCount = AVAudioFrameCount(int: samples.count)
+    let frameCount = AVAudioFrameCount(samples.count)
     let format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 1)!
     guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount) else {
         return nil
@@ -18,7 +18,8 @@ func createAudioPCMBuffer(samples: [Float], sampleRate: Double) -> AVAudioPCMBuf
     for (index, sample) in samples.enumerated() {
         channelData[index] = sample
     }
-    
+    print("frameCount: \(frameCount)")
+    print("buffer.frameLength \(buffer.frameLength)")
     return buffer
 }
 
