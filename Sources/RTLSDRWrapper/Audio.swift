@@ -22,7 +22,7 @@ func createAudioPCMBuffer(samples: [Float], sampleRate: Double) -> AVAudioPCMBuf
     return buffer
 }
 
-class AudioPlayer {
+public class AudioPlayer {
     private let engine = AVAudioEngine()
     private let player = AVAudioPlayerNode()
     

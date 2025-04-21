@@ -4,24 +4,25 @@
 //
 //  Created by Connor Gibbons  on 4/18/25.
 //
+
 import Foundation
 
-enum RTLSDRError: Error {
+public enum RTLSDRError: Error {
     case deviceNotFound
     case failedToInitialize
 }
 
 @available(macOS 14.0, *)
 @Observable
-class RTLSDR {
+public class RTLSDR {
     let devicePointer: OpaquePointer
     let deviceName: String
     let tuner: RTLSDRTunerType
     let USBStrings: (String, String, String)
     let index: Int
     let asyncHandler: RTLSDRHandler
-    
-    var centerFrequency: Int? {
+
+    public var centerFrequency: Int? {
         get {
             return getCenterFrequency(device: devicePointer)
         }
@@ -33,8 +34,8 @@ class RTLSDR {
             print("Center frequency set to \(newValue) Hz")
         }
     }
-    
-    var frequencyCorrection: Int? {
+
+    public var frequencyCorrection: Int? {
         get {
             return getFrequencyCorrection(device: devicePointer)
         }
@@ -46,13 +47,11 @@ class RTLSDR {
         }
     }
 
-    var tunerGains: [Int]? {
-        get {
-            return getTunerGains(device: devicePointer)
-        }
+    public var tunerGains: [Int]? {
+        return getTunerGains(device: devicePointer)
     }
 
-    var tunerGain: Int? {
+    public var tunerGain: Int? {
         get {
             return getTunerGain(device: devicePointer)
         }
@@ -64,8 +63,8 @@ class RTLSDR {
         }
     }
 
-    var tunerBandwidth: Int? = 0 // 0 means automatic
-    func setTunerBandwidth(_ newValue: Int) {
+    public var tunerBandwidth: Int? = 0 // 0 means automatic
+    public func setTunerBandwidth(_ newValue: Int) {
         if !RTLSDRWrapper.setTunerBandwidth(device: devicePointer, bandwidth: newValue) {
             print("Failed to set tuner bandwidth.")
             return
@@ -73,8 +72,8 @@ class RTLSDR {
         tunerBandwidth = newValue
     }
 
-    var intermediateFrequencyGain: (Int,Int)? = (0,0)
-    func setIntermediateFrequencyGain(stage: Int, gain: Int) {
+    public var intermediateFrequencyGain: (Int, Int)? = (0, 0)
+    public func setIntermediateFrequencyGain(stage: Int, gain: Int) {
         if !RTLSDRWrapper.setTunerIntermediateFrequencyGain(device: devicePointer, stage: stage, gain: gain) {
             print("Failed to set intermediate frequency gain.")
             return
@@ -82,16 +81,16 @@ class RTLSDR {
         intermediateFrequencyGain = (stage, gain)
     }
 
-    var manualGainEnabled: Bool = false
-    func toggleManualGain() {
-        if(!RTLSDRWrapper.setManualGainMode(device: devicePointer, enable: !manualGainEnabled)) {
+    public var manualGainEnabled: Bool = false
+    public func toggleManualGain() {
+        if (!RTLSDRWrapper.setManualGainMode(device: devicePointer, enable: !manualGainEnabled)) {
             print("Failed to \(manualGainEnabled ? "disable" : "enable") manual gain mode.")
             return
         }
         manualGainEnabled.toggle()
     }
 
-    var sampleRate: Int? {
+    public var sampleRate: Int? {
         get {
             return getSampleRate(device: devicePointer)
         }
@@ -103,25 +102,25 @@ class RTLSDR {
         }
     }
 
-    var testModeEnabled: Bool = false
-    func toggleTestMode() {
-        if(!RTLSDRWrapper.setTestMode(device: devicePointer, enable: !testModeEnabled)) {
+    public var testModeEnabled: Bool = false
+    public func toggleTestMode() {
+        if (!RTLSDRWrapper.setTestMode(device: devicePointer, enable: !testModeEnabled)) {
             print("Failed to \(testModeEnabled ? "disable" : "enable") test mode.")
             return
         }
         testModeEnabled.toggle()
     }
-    
-    var digitalAGCEnabled: Bool = false
-    func toggleDigitalAGC() {
-        if(!RTLSDRWrapper.setAGCMode(device: devicePointer, enable: !digitalAGCEnabled)) {
+
+    public var digitalAGCEnabled: Bool = false
+    public func toggleDigitalAGC() {
+        if (!RTLSDRWrapper.setAGCMode(device: devicePointer, enable: !digitalAGCEnabled)) {
             print("Failed to \(digitalAGCEnabled ? "disable" : "enable") digital AGC.")
             return
         }
         digitalAGCEnabled.toggle()
     }
 
-    var directSamplingMode: DirectSamplingMode? {
+    public var directSamplingMode: DirectSamplingMode? {
         get {
             return getDirectSamplingMode(device: devicePointer)
         }
@@ -133,7 +132,7 @@ class RTLSDR {
         }
     }
 
-    var offsetTuningEnabled: Bool? {
+    public var offsetTuningEnabled: Bool? {
         get {
             return getOffsetTuning(device: devicePointer)
         }
@@ -144,8 +143,8 @@ class RTLSDR {
             }
         }
     }
-    
-    init(deviceIndex: Int?) throws {
+
+    public init(deviceIndex: Int?) throws {
         self.index = deviceIndex ?? 0
         guard let tdevicePointer = openRTLSDR(index: index) else {
             throw RTLSDRError.deviceNotFound
@@ -155,7 +154,7 @@ class RTLSDR {
         self.tuner = getTunerType(device: devicePointer)
         self.USBStrings = SDRProbe.getDeviceUSBStrings(index: index) ?? ("??", "??", "??")
         self.asyncHandler = RTLSDRHandler(device: devicePointer)
-        
+
         let initResults = [
             RTLSDRWrapper.setAGCMode(device: devicePointer, enable: false),
             RTLSDRWrapper.setTestMode(device: devicePointer, enable: false),
@@ -167,24 +166,22 @@ class RTLSDR {
         ]
         let initOps = ["AGC", "disableTestMode", "disableOffsetTuning", "disableManualGain", "setAutomaticBandwidth", "setSampleRate", "setDefaultFreq"]
         for (i, result) in initResults.enumerated() {
-            if(!result) {
+            if (!result) {
                 print("!! Warning: Init operation failed: \(initOps[i])")
             }
         }
-        
     }
-    
+
     deinit {
         let result = closeRTLSDR(device: devicePointer)
-        if(!result) {
+        if (!result) {
             print("!! Warning: Failed to close device.")
-        }
-        else {
+        } else {
             print("Successfully closed device.")
         }
     }
-    
-    var signalChainSummary: String {
+
+    public var signalChainSummary: String {
         return """
         Input → Bandpass → LNA →
         Mixer → IF Gain (\(intermediateFrequencyGain?.1 ?? 0)dB) →
@@ -192,18 +189,17 @@ class RTLSDR {
         Sample Rate: \(sampleRate ?? 0) Hz
         """
     }
-    
-    func syncReadSamples(count: Int) -> [IQSample] {
+
+    public func syncReadSamples(count: Int) -> [IQSample] {
         _ = resetBuffer(device: devicePointer)
         return readSamples(device: devicePointer, sampleCount: count)
     }
-    
-    func asyncReadSamples(callback: @escaping ([IQSample]) -> Void) {
+
+    public func asyncReadSamples(callback: @escaping ([IQSample]) -> Void) {
         self.asyncHandler.startAsyncRead(callback: callback)
     }
-    
-    func stopAsyncRead() {
+
+    public func stopAsyncRead() {
         self.asyncHandler.stopAsyncRead()
     }
-    
 }

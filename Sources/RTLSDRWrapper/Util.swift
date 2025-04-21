@@ -13,7 +13,7 @@ let ONE_SECOND = 1_000_000_000
 let NORMALIZATION_FACTOR: Float = 1 / 127.5
 nonisolated(unsafe) let IQSAMPLE_FROM_UINT8_LUT: UnsafePointer<Float> = (0...255).map { Float($0) * (NORMALIZATION_FACTOR) }.withUnsafeBufferPointer { UnsafePointer($0.baseAddress!) }
 
-struct IQSample: Codable {
+public struct IQSample: Codable {
     let i: Float
     let q: Float
     
@@ -60,7 +60,7 @@ func IQSamplesFromBufferLUT(_ buffer: [UInt8]) -> [IQSample] {
     return samples
 }
 
-func samplesToCSV(_ samples: [IQSample], path: String) {
+public func samplesToCSV(_ samples: [IQSample], path: String) {
     var csvText = "I,Q\n"
     for sample in samples {
         csvText.append("\(sample.i),\(sample.q)\n")
@@ -73,7 +73,7 @@ func samplesToCSV(_ samples: [IQSample], path: String) {
     }
 }
 
-func magsToCSV(_ mags: [Float], path: String) {
+public func magsToCSV(_ mags: [Float], path: String) {
     var csvText = "t,Mag\n"
     var t = 0
     for mag in mags {
@@ -88,7 +88,7 @@ func magsToCSV(_ mags: [Float], path: String) {
     }
 }
 
-func fmDemod(_ samples: [IQSample]) -> [Float] {
+public func fmDemod(_ samples: [IQSample]) -> [Float] {
     var diffs =  [Float].init(repeating: 0.0, count: samples.count - 1)
     for i in 1..<samples.count {
         let i0 = samples[i-1].i
