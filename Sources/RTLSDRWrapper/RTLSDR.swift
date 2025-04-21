@@ -30,6 +30,7 @@ class RTLSDR {
             if !setCenterFrequency(device: devicePointer, frequency: newValue) {
                 print("Failed to set center frequency.")
             }
+            print("Center frequency set to \(newValue) Hz")
         }
     }
     
