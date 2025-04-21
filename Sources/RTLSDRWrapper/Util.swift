@@ -97,7 +97,7 @@ public func fmDemod(_ samples: [IQSample]) -> [Float] {
         let q1 = samples[i].q
         
         let realPart = (i1 * i0) + (q1*q0)
-        let imaginaryPart = (q1 * i0) + (q0 * i1)
+        let imaginaryPart = (q1 * i0) - (q0 * i1)
         diffs[i - 1] = atan2(imaginaryPart, realPart)
     }
     return diffs
