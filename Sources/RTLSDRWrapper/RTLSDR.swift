@@ -19,6 +19,19 @@ class RTLSDR {
     let tuner: RTLSDRTunerType
     let USBStrings: (String, String, String)
     let index: Int
+    let asyncHandler: RTLSDRHandler
+    
+    var centerFrequency: Int? {
+        get {
+            return getCenterFrequency(device: devicePointer)
+        }
+        set {
+            guard let newValue = newValue else { return }
+            if !setCenterFrequency(device: devicePointer, frequency: newValue) {
+                print("Failed to set center frequency.")
+            }
+        }
+    }
     
     var frequencyCorrection: Int? {
         get {
@@ -140,6 +153,7 @@ class RTLSDR {
         self.deviceName = SDRProbe.getDeviceName(index: index) ?? "Unknown Device"
         self.tuner = getTunerType(device: devicePointer)
         self.USBStrings = SDRProbe.getDeviceUSBStrings(index: index) ?? ("??", "??", "??")
+        self.asyncHandler = RTLSDRHandler(device: devicePointer)
         
         let initResults = [
             RTLSDRWrapper.setAGCMode(device: devicePointer, enable: false),
@@ -181,6 +195,14 @@ class RTLSDR {
     func syncReadSamples(count: Int) -> [IQSample] {
         _ = resetBuffer(device: devicePointer)
         return readSamples(device: devicePointer, sampleCount: count)
+    }
+    
+    func asyncReadSamples(callback: @escaping ([IQSample]) -> Void) {
+        self.asyncHandler.startAsyncRead(callback: callback)
+    }
+    
+    func stopAsyncRead() {
+        self.asyncHandler.stopAsyncRead()
     }
     
 }

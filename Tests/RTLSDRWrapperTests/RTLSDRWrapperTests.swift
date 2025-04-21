@@ -8,5 +8,10 @@ import CRTLSDR
     print(newSDR.signalChainSummary)
     try await Task.sleep(nanoseconds: UInt64(Double(ONE_SECOND)*0.5))
     let samples = newSDR.syncReadSamples(count: 16384)
-    samplesToCSV(samples, path: "/Users/connorgibbons/Desktop/iqSample.csv")
+    // samplesToCSV(samples, path: "/Users/connorgibbons/Desktop/iqSample.csv")
+    newSDR.asyncReadSamples(callback: { (samples) in
+        print("")
+    })
+    try await Task.sleep(nanoseconds: UInt64(ONE_SECOND)*20)
+    newSDR.stopAsyncRead()
 }

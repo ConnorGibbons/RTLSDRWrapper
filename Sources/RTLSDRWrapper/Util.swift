@@ -11,6 +11,7 @@ let MHZ = 1_000_000
 let MSPS = 1_000_000
 let ONE_SECOND = 1_000_000_000
 let NORMALIZATION_FACTOR: Float = 1 / 127.5
+nonisolated(unsafe) let IQSAMPLE_FROM_UINT8_LUT: UnsafePointer<Float> = (0...255).map { Float($0) * (NORMALIZATION_FACTOR) }.withUnsafeBufferPointer { UnsafePointer($0.baseAddress!) }
 
 struct IQSample: Codable {
     let i: Float
@@ -23,6 +24,32 @@ struct IQSample: Codable {
 
 func IQSamplesFromBuffer(_ buffer: [UInt8]) -> [IQSample] {
     let t0 = Date.timeIntervalSinceReferenceDate
+    let count = buffer.count & ~1
+    var samples = [IQSample].init(repeating: IQSample(i: 0, q: 0), count: count)
+    for index in stride(from: 0, to: count, by: 2) {
+        let I: Float = Float(buffer[index]) * NORMALIZATION_FACTOR - 1
+        let Q: Float = Float(buffer[index+1]) * NORMALIZATION_FACTOR - 1
+        samples[index / 2] = IQSample(i: I, q: Q)
+    }
+//    samples.withUnsafeMutableBufferPointer { samplesPtr in
+//        buffer.withUnsafeBytes { bufferPtr in
+//            let currBytePtr = bufferPtr.bindMemory(to: UInt8.self)
+//            for idx in 0...count {
+//                let I: Float = Float(buffer[idx * 2]) * NORMALIZATION_FACTOR - 1
+//                let Q: Float = Float(buffer[idx * 2 + 1]) * NORMALIZATION_FACTOR - 1
+//                samplesPtr[idx] = IQSamples(i: I, q: Q)
+//            }
+//        }
+//    }
+    let totalSamples = buffer.count / 2
+    let t1 = Date.timeIntervalSinceReferenceDate
+    print("Time to convert buffer to \(totalSamples) samples: \(t1-t0) seconds (\(Double(totalSamples) * 1/(t1-t0)) samples per second")
+    return samples
+}
+
+// Here just for proof of concept & testing. It takes double the time that IQSamplesFromBuffer (multi.) uses.
+func IQSamplesFromBufferLUT(_ buffer: [UInt8]) -> [IQSample] {
+    let t0 = Date.timeIntervalSinceReferenceDate
     var samples: [IQSample] = []
     var count = buffer.count
     if(buffer.count % 2 != 0) {
@@ -30,8 +57,8 @@ func IQSamplesFromBuffer(_ buffer: [UInt8]) -> [IQSample] {
         count -= 1
     }
     for index in stride(from: 0, to: buffer.count, by: 2) {
-        let I: Float = Float(buffer[index]) * NORMALIZATION_FACTOR - 1
-        let Q: Float = Float(buffer[index+1]) * NORMALIZATION_FACTOR - 1
+        let I: Float = IQSAMPLE_FROM_UINT8_LUT[Int(buffer[index])]
+        let Q: Float = IQSAMPLE_FROM_UINT8_LUT[Int(buffer[index])]
         samples.append(IQSample(i: I, q: Q))
     }
     let t1 = Date.timeIntervalSinceReferenceDate

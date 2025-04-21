@@ -264,4 +264,8 @@ func readSamples(device: OpaquePointer, sampleCount: Int) -> [IQSample] {
     return IQSamplesFromBuffer(buffer)
 }
 
+func asyncReadSamples(device: OpaquePointer, sampleCount: Int, completion: @escaping ([IQSample]) -> Void) {
+    
+}
+
 
