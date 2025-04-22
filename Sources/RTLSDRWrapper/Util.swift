@@ -37,7 +37,7 @@ func IQSamplesFromBuffer(_ buffer: [UInt8]) -> [IQSample] {
         samples[index / 2] = IQSample(i: I, q: Q)
     }
     let t1 = Date.timeIntervalSinceReferenceDate
-    print("Time to convert buffer to \(totalSamples) samples: \(t1-t0) seconds (\(Double(totalSamples) * 1/(t1-t0)) samples per second")
+    // print("Time to convert buffer to \(totalSamples) samples: \(t1-t0) seconds (\(Double(totalSamples) * 1/(t1-t0))) samples per second")
     return samples
 }
 
@@ -56,7 +56,7 @@ func IQSamplesFromBufferLUT(_ buffer: [UInt8]) -> [IQSample] {
         samples.append(IQSample(i: I, q: Q))
     }
     let t1 = Date.timeIntervalSinceReferenceDate
-    print("Time to convert buffer to samples: \(t1-t0) seconds")
+    // print("Time to convert buffer to samples: \(t1-t0) seconds")
     return samples
 }
 
@@ -96,7 +96,7 @@ public func fmDemod(_ samples: [IQSample]) -> [Float] {
         let i1 = samples[i].i
         let q1 = samples[i].q
         
-        let realPart = (i1 * i0) + (q1*q0)
+        let realPart = (i1 * i0) + (q1 * q0)
         let imaginaryPart = (q1 * i0) - (q0 * i1)
         diffs[i - 1] = atan2(imaginaryPart, realPart)
     }
