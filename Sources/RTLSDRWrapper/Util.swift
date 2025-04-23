@@ -149,5 +149,13 @@ public func vDSPfmDemodv2(_ samples: [DSPComplex]) -> [Float] {
     vDSP_zvmul(&curr, stride, &prev, stride, &prod, stride, vDSPn, -1)
     var diffs = [Float](repeating: 0, count: n)
     vDSP.phase(prod, result: &diffs)
+    defer {
+        prev.imagp.deallocate()
+        prev.realp.deallocate()
+        curr.imagp.deallocate()
+        curr.realp.deallocate()
+        prod.imagp.deallocate()
+        prod.realp.deallocate()
+    }
     return diffs
 }
