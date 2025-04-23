@@ -148,9 +148,9 @@ public func vDSPfmDemodv2(_ samples: [DSPComplex]) -> [Float] {
     var diffs = [Float].init(repeating: 0, count: n)
     samples.withUnsafeBytes { raw in
         var prevDest = DSPSplitComplex(realp: i0.baseAddress!, imagp: q0.baseAddress!)
-        vDSP_ctoz(raw.baseAddress!.assumingMemoryBound(to: DSPComplex.self), 1, &prevDest, 1, vDSP_Length(n))
+        vDSP_ctoz(raw.baseAddress!.assumingMemoryBound(to: DSPComplex.self), 2, &prevDest, 1, vDSP_Length(n))
         var currDest = DSPSplitComplex(realp: i1.baseAddress!, imagp: q1.baseAddress!)
-        vDSP_ctoz(raw.baseAddress!.assumingMemoryBound(to: DSPComplex.self).advanced(by: 1), 1, &currDest, 1, vDSP_Length(n))
+        vDSP_ctoz(raw.baseAddress!.assumingMemoryBound(to: DSPComplex.self).advanced(by: 1), 2, &currDest, 1, vDSP_Length(n))
         
         vDSP_zvmul(&currDest, 1, &prevDest, 1, &prod, 1, vDSP_Length(n), 1)
         
