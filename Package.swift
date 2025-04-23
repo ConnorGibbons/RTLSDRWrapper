@@ -1,26 +1,17 @@
 // swift-tools-version: 6.1
-// The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
 
 let package = Package(
     name: "RTLSDRWrapper",
     products: [
-        // Products define the executables and libraries a package produces, making them visible to other packages.
-        .library(
-            name: "RTLSDRWrapper",
-            targets: ["RTLSDRWrapper"]),
+        .library(name: "RTLSDRWrapper", targets: ["RTLSDRWrapper"]),
     ],
     targets: [
-        // Targets are the basic building blocks of a package, defining a module or a test suite.
-        // Targets can depend on other targets in this package and products from dependencies.
-        .target(
-            name: "RTLSDRWrapper",
-            dependencies: ["CRTLSDR"]
-        ),
+        .binaryTarget(name: "libusb", path: "./XCFrameworks/libusb.xcframework"),
         .target(
             name: "CRTLSDR",
-            dependencies: [],
+            dependencies: ["libusb"],
             path: "./Sources/CRTLSDR",
             exclude: [
                 "src/rtl_adsb.c",
@@ -33,17 +24,23 @@ let package = Package(
                 "src/rtl_test.c",
                 "src/CMakeLists.txt",
                 "src/Makefile.am",
-                "src/rtlsdr.rc.in"
+                "src/rtlsdr.rc.in",
             ],
-            sources: ["./src"],
+            sources: ["src"],
             publicHeadersPath: "include",
             cSettings: [
-                .headerSearchPath("./CRTLSDR/src"),
-                .unsafeFlags(["-I/opt/homebrew/include/libusb-1.0"])
+                .headerSearchPath("src"),
+                .define("HAVE_LIBUSB", to: "1"),
             ],
             linkerSettings: [
-                .linkedLibrary("usb-1.0")
+                .linkedFramework("IOKit", .when(platforms: [.macOS])),
+                .linkedFramework("CoreFoundation", .when(platforms: [.macOS])),
+                .linkedFramework("Security", .when(platforms: [.macOS]))
             ]
+        ),
+        .target(
+            name: "RTLSDRWrapper",
+            dependencies: ["CRTLSDR"]
         ),
         .testTarget(
             name: "RTLSDRWrapperTests",
