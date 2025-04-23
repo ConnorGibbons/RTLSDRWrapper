@@ -109,11 +109,10 @@ public func vDSPfmDemod(_ samples: [IQSample]) -> [Float] {
     samples.withUnsafeBufferPointer { samplesPtr in
         var basePointer = samplesPtr.baseAddress!
         basePointer.withMemoryRebound(to: Float.self, capacity: 2 * samples.count) { ptr in
-            var i0 = UnsafePointer(ptr)
-            var q0 = UnsafePointer(ptr.advanced(by: 1))
-            var i1 = UnsafePointer(ptr.advanced(by: 2))
-            var q1 = UnsafePointer(ptr.advanced(by: 3))
-            
+            let i0 = UnsafePointer(ptr)
+            let q0 = UnsafePointer(ptr.advanced(by: 1))
+            let i1 = UnsafePointer(ptr.advanced(by: 2))
+            let q1 = UnsafePointer(ptr.advanced(by: 3))
             // Temp arrays to store z1 * z0(conj.) as vectors:
             // tempReal[x] = (samples[x].i * samples[x-1].i) + (samples[x].q * samples[x-1].q)
             // tempIm[x] = (samples[x].q * samples[x-1].i) - (samples[x].i * samples[x-1].q)
@@ -126,7 +125,7 @@ public func vDSPfmDemod(_ samples: [IQSample]) -> [Float] {
                     var A: DSPSplitComplex = .init(realp: UnsafeMutablePointer(mutating: i0), imagp: UnsafeMutablePointer(mutating: q0)) // prev
                     var B: DSPSplitComplex = .init(realp: UnsafeMutablePointer(mutating: i1), imagp: UnsafeMutablePointer(mutating: q1)) // curr
                     var C: DSPSplitComplex = .init(realp: tempRealPtr.baseAddress!, imagp: tempImPtr.baseAddress!)
-                    vDSP_zvmul(&B, stride, &A, stride, &C, 1, vDSP_Length(samples.count - 1), 1)
+                    vDSP_zvmul(&A, stride, &B, stride, &C, 1, vDSP_Length(samples.count - 1), 1)
                     diffs.withUnsafeMutableBufferPointer { diffsPtr in
                         let basePtr = diffsPtr.baseAddress!
                         vDSP_zvphas(&C, 1, basePtr, 1, vDSP_Length(samples.count - 1))
@@ -135,5 +134,27 @@ public func vDSPfmDemod(_ samples: [IQSample]) -> [Float] {
             }
         }
     }
+    return diffs
+}
+
+public func vDSPfmDemodv2(_ samples: [IQSample]) -> [Float] {
+    let n = samples.count - 1
+    var i0 = UnsafeMutableBufferPointer<Float>.allocate(capacity: n)
+    var q0 = UnsafeMutableBufferPointer<Float>.allocate(capacity: n)
+    var i1 = UnsafeMutableBufferPointer<Float>.allocate(capacity: n)
+    var q1 = UnsafeMutableBufferPointer<Float>.allocate(capacity: n)
+    var prod = DSPSplitComplex(realp: .allocate(capacity: n), imagp: .allocate(capacity: n))
+    var diffs = [Float].init(repeating: 0, count: n)
+    samples.withUnsafeBytes { raw in
+        var prevDest = DSPSplitComplex(realp: i0.baseAddress!, imagp: q0.baseAddress!)
+        vDSP_ctoz(raw.baseAddress!.assumingMemoryBound(to: DSPComplex.self), 1, &prevDest, 1, vDSP_Length(n))
+        var currDest = DSPSplitComplex(realp: i1.baseAddress!, imagp: q1.baseAddress!)
+        vDSP_ctoz(raw.baseAddress!.assumingMemoryBound(to: DSPComplex.self).advanced(by: 1), 1, &currDest, 1, vDSP_Length(n))
+        
+        vDSP_zvmul(&prevDest, 1, &currDest, 1, &prod, 1, vDSP_Length(n), 1)
+        
+        vDSP_zvphas(&prod, 1, &diffs, 1, vDSP_Length(n))
+    }
+    
     return diffs
 }
