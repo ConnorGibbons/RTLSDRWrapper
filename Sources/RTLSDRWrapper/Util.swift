@@ -15,8 +15,8 @@ let NORMALIZATION_FACTOR: Float = 1 / 127.5
 nonisolated(unsafe) let IQSAMPLE_FROM_UINT8_LUT: UnsafePointer<Float> = (0...255).map { Float($0) * (NORMALIZATION_FACTOR) }.withUnsafeBufferPointer { UnsafePointer($0.baseAddress!) }
 
 public struct IQSample: Codable {
-    let i: Float
-    let q: Float
+    public let i: Float
+    public let q: Float
     
     public var description: String {
         return "(I: \(i), Q: \(q))"
