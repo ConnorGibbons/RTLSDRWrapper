@@ -135,13 +135,18 @@ public func vDSPfmDemod(_ samples: [IQSample]) -> [Float] {
     return diffs
 }
 
-//@available(macOS 14.0, *)
-//public func vDSPfmDemodv2(_ samples: [DSPComplex]) -> [Float] {
-//    let n = samples.count - 1
-//    var prev = DSPSplitComplex(realp: .allocate(capacity: n), imagp: .allocate(capacity: n))
-//    vDSP.convert(interleavedComplexVector: samples, toSplitComplexVector: &prev)
-//    var curr = DSPSplitComplex(realp: .allocate(capacity: n), imagp: .allocate(capacity: n))
-//    vDSP.convert(interleavedComplexVector: samples.dropFirst().dropLast(0), toSplitComplexVector: &curr)
-//    let prod =
-//    return diffs
-//}
+@available(macOS 14.0, *)
+public func vDSPfmDemodv2(_ samples: [DSPComplex]) -> [Float] {
+    let n = samples.count - 1
+    let vDSPn = vDSP_Length(n)
+    let stride = vDSP_Stride(1)
+    var prev = DSPSplitComplex(realp: .allocate(capacity: n), imagp: .allocate(capacity: n))
+    vDSP.convert(interleavedComplexVector: samples, toSplitComplexVector: &prev)
+    var curr = DSPSplitComplex(realp: .allocate(capacity: n), imagp: .allocate(capacity: n))
+    vDSP.convert(interleavedComplexVector: samples.dropFirst().dropLast(0), toSplitComplexVector: &curr)
+    var prod = DSPSplitComplex(realp: .allocate(capacity: n), imagp: .allocate(capacity: n))
+    vDSP_zvmul(&curr, stride, &prev, stride, &prod, stride, vDSPn, 1)
+    var diffs = [Float](repeating: 0, count: n)
+    vDSP.phase(prod, result: &diffs)
+    return diffs
+}
