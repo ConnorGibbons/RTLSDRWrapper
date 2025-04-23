@@ -12,59 +12,41 @@ let MHZ = 1_000_000
 let MSPS = 1_000_000
 let ONE_SECOND = 1_000_000_000
 let NORMALIZATION_FACTOR: Float = 1 / 127.5
-nonisolated(unsafe) let IQSAMPLE_FROM_UINT8_LUT: UnsafePointer<Float> = (0...255).map { Float($0) * (NORMALIZATION_FACTOR) }.withUnsafeBufferPointer { UnsafePointer($0.baseAddress!) }
 
-public struct IQSample: Codable {
-    public let i: Float
-    public let q: Float
-    
-    public var description: String {
-        return "(I: \(i), Q: \(q))"
-    }
-    
-    public func magnitude() -> Float {
-        return sqrt( (i * i) + (q * q) )
-    }
-}
+nonisolated(unsafe) let FLOAT_FROM_UINT8_LUT: UnsafePointer<Float> = (0...255).map { Float($0) * (NORMALIZATION_FACTOR) }.withUnsafeBufferPointer { UnsafePointer($0.baseAddress!) }
 
-func IQSamplesFromBuffer(_ buffer: [UInt8]) -> [IQSample] {
-    let t0 = Date.timeIntervalSinceReferenceDate
+func IQSamplesFromBuffer(_ buffer: [UInt8]) -> [DSPComplex] {
     let count = buffer.count & ~1
     let totalSamples = buffer.count / 2
-    var samples = [IQSample].init(repeating: IQSample(i: 0, q: 0), count: totalSamples)
+    var samples = [DSPComplex].init(repeating: DSPComplex(real: 0, imag: 0), count: totalSamples)
     for index in stride(from: 0, to: count, by: 2) {
         let I: Float = Float(buffer[index]) * NORMALIZATION_FACTOR - 1
         let Q: Float = Float(buffer[index+1]) * NORMALIZATION_FACTOR - 1
-        samples[index / 2] = IQSample(i: I, q: Q)
+        samples[index / 2] = DSPComplex(real: I, imag: Q)
     }
-    let t1 = Date.timeIntervalSinceReferenceDate
-    // print("Time to convert buffer to \(totalSamples) samples: \(t1-t0) seconds (\(Double(totalSamples) * 1/(t1-t0))) samples per second")
     return samples
 }
 
 // Here just for proof of concept & testing. It takes double the time that IQSamplesFromBuffer (multi.) uses.
-func IQSamplesFromBufferLUT(_ buffer: [UInt8]) -> [IQSample] {
-    let t0 = Date.timeIntervalSinceReferenceDate
-    var samples: [IQSample] = []
+func IQSamplesFromBufferLUT(_ buffer: [UInt8]) -> [DSPComplex] {
+    var samples: [DSPComplex] = []
     var count = buffer.count
     if(buffer.count % 2 != 0) {
         print("IQ Sample buffer has uneven length, something might be wrong, ignoring last pair.")
         count -= 1
     }
     for index in stride(from: 0, to: buffer.count, by: 2) {
-        let I: Float = IQSAMPLE_FROM_UINT8_LUT[Int(buffer[index])]
-        let Q: Float = IQSAMPLE_FROM_UINT8_LUT[Int(buffer[index])]
-        samples.append(IQSample(i: I, q: Q))
+        let I: Float = FLOAT_FROM_UINT8_LUT[Int(buffer[index])]
+        let Q: Float = FLOAT_FROM_UINT8_LUT[Int(buffer[index])]
+        samples.append(DSPComplex(real: I, imag: Q))
     }
-    let t1 = Date.timeIntervalSinceReferenceDate
-    // print("Time to convert buffer to samples: \(t1-t0) seconds")
     return samples
 }
 
-public func samplesToCSV(_ samples: [IQSample], path: String) {
+public func samplesToCSV(_ samples: [DSPComplex], path: String) {
     var csvText = "I,Q\n"
     for sample in samples {
-        csvText.append("\(sample.i),\(sample.q)\n")
+        csvText.append("\(sample.real),\(sample.imag)\n")
     }
     do {
         try csvText.write(toFile: path, atomically: true, encoding: .utf8)
@@ -89,13 +71,13 @@ public func magsToCSV(_ mags: [Float], path: String) {
     }
 }
 
-public func fmDemod(_ samples: [IQSample]) -> [Float] {
+public func fmDemod(_ samples: [DSPComplex]) -> [Float] {
     var diffs =  [Float].init(repeating: 0.0, count: samples.count - 1)
     for i in 1..<samples.count {
-        let i0 = samples[i-1].i
-        let q0 = samples[i-1].q
-        let i1 = samples[i].i
-        let q1 = samples[i].q
+        let i0 = samples[i-1].real
+        let q0 = samples[i-1].imag
+        let i1 = samples[i].real
+        let q1 = samples[i].imag
         
         let realPart = (i1 * i0) + (q1 * q0)
         let imaginaryPart = (q1 * i0) - (q0 * i1)
@@ -104,11 +86,11 @@ public func fmDemod(_ samples: [IQSample]) -> [Float] {
     return diffs
 }
 
-public func vDSPfmDemod(_ samples: [IQSample]) -> [Float] {
+public func vDSPfmDemod(_ samples: [DSPComplex]) -> [Float] {
     let n = vDSP_Length(samples.count - 1)
     var diffs = [Float].init(repeating: 0.0, count: samples.count - 1)
     samples.withUnsafeBufferPointer { samplesPtr in
-        var basePointer = samplesPtr.baseAddress!
+        let basePointer = samplesPtr.baseAddress!
         basePointer.withMemoryRebound(to: Float.self, capacity: 2 * samples.count) { ptr in
             let i0 = UnsafePointer(ptr)
             let q0 = UnsafePointer(ptr.advanced(by: 1))
@@ -142,11 +124,11 @@ public func vDSPfmDemodv2(_ samples: [DSPComplex]) -> [Float] {
     let vDSPn = vDSP_Length(n)
     let stride = vDSP_Stride(1)
     var prev = DSPSplitComplex(realp: .allocate(capacity: n), imagp: .allocate(capacity: n))
-    vDSP.convert(interleavedComplexVector: samples, toSplitComplexVector: &prev)
+    vDSP.convert(interleavedComplexVector: Array<DSPComplex>(samples.prefix(n)), toSplitComplexVector: &prev)
     var curr = DSPSplitComplex(realp: .allocate(capacity: n), imagp: .allocate(capacity: n))
-    vDSP.convert(interleavedComplexVector: samples.dropFirst().dropLast(0), toSplitComplexVector: &curr)
+    vDSP.convert(interleavedComplexVector: samples.suffix(n), toSplitComplexVector: &curr)
     var prod = DSPSplitComplex(realp: .allocate(capacity: n), imagp: .allocate(capacity: n))
-    vDSP_zvmul(&curr, stride, &prev, stride, &prod, stride, vDSPn, -1)
+    vDSP_zvmul(&prev, stride, &curr, stride, &prod, stride, vDSPn, -1)
     var diffs = [Float](repeating: 0, count: n)
     vDSP.phase(prod, result: &diffs)
     defer {

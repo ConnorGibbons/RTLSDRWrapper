@@ -7,6 +7,7 @@
 //
 import Foundation
 import CRTLSDR
+import Accelerate
 
 let wBUF_NUM: UInt32 = 15
 let wBUF_LEN: UInt32 = 16 * 32 * 512
@@ -25,7 +26,7 @@ func rtlsdr_handler(_ buf: UnsafeMutablePointer<UInt8>?, _ len: UInt32, _ ctx: U
 class RTLSDRHandler {
     let device: OpaquePointer
     var isActive: Bool
-    var callback: (([IQSample]) -> Void)?
+    var callback: (([DSPComplex]) -> Void)?
     
     
     init(device: OpaquePointer) {
@@ -42,7 +43,7 @@ class RTLSDRHandler {
         callback(IQSamplesFromBuffer(buff))
     }
     
-    func startAsyncRead(callback: @escaping ([IQSample]) -> Void) {
+    func startAsyncRead(callback: @escaping ([DSPComplex]) -> Void) {
         let retainedSelf = Unmanaged.passRetained(self)
         guard !isActive else { return }
         self.callback = callback

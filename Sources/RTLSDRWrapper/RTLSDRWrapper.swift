@@ -1,4 +1,5 @@
 import CRTLSDR
+import Accelerate
 
 // More general discovery funcs not requiring a device pointer
 public enum SDRProbe {
@@ -123,7 +124,7 @@ func setCenterFrequency(device: OpaquePointer, frequency: Int) -> Bool {
 
 func getCenterFrequency(device: OpaquePointer) -> Int? {
     let frequency: UInt32 = CRTLSDR.rtlsdr_get_center_freq(device)
-    if(frequency != 0) {
+    if(frequency == 0) {
         print("Error getting center frequency: \(frequency)")
         return nil
     }
@@ -139,7 +140,7 @@ func setFrequencyCorrection(device: OpaquePointer, ppm: Int) -> Bool {
     return true
 }
 
-func getFrequencyCorrection(device: OpaquePointer) -> Int? {
+func getFrequencyCorrection(device: OpaquePointer) -> Int {
     let ppm: Int32 = CRTLSDR.rtlsdr_get_freq_correction(device)
     return Int(ppm)
 }
@@ -251,7 +252,7 @@ func resetBuffer(device: OpaquePointer) -> Bool {
     return 0 == CRTLSDR.rtlsdr_reset_buffer(device)
 }
 
-func readSamples(device: OpaquePointer, sampleCount: Int) -> [IQSample] {
+func readSamples(device: OpaquePointer, sampleCount: Int) -> [DSPComplex] {
     // two UInt8's per sample, so 2 bytes/sample
     let allocate = 2 * sampleCount
     var amountRead: Int32 = 0
@@ -262,10 +263,6 @@ func readSamples(device: OpaquePointer, sampleCount: Int) -> [IQSample] {
         return []
     }
     return IQSamplesFromBuffer(buffer)
-}
-
-func asyncReadSamples(device: OpaquePointer, sampleCount: Int, completion: @escaping ([IQSample]) -> Void) {
-    
 }
 
 

@@ -7,23 +7,22 @@ import Accelerate
 @Test func example() async throws {
     #expect(SDRProbe.getDeviceCount() == CRTLSDR.rtlsdr_get_device_count())
     let newSDR = try RTLSDR.init(deviceIndex: 0)
-    newSDR.centerFrequency = Int(93.7*Double(MHZ))
-    newSDR.toggleDigitalAGC()
+    try newSDR.setCenterFrequency(94*MHZ)
+    try newSDR.setDigitalAGC(true)
     print(newSDR.signalChainSummary)
     try await Task.sleep(nanoseconds: UInt64(Double(ONE_SECOND)*0.5))
-    var storedSamples: [IQSample] = []
+    var storedSamples: [DSPComplex] = []
     storedSamples.append(contentsOf: newSDR.syncReadSamples(count: 16384)) // If this isn't included, the USB transfer for the async read fails. Only god knows why
     storedSamples.removeAll(keepingCapacity: true)
     newSDR.asyncReadSamples(callback: { (samples) in
         storedSamples.append(contentsOf: samples)
     })
     try await Task.sleep(nanoseconds: UInt64(ONE_SECOND))
-    let storedSamplesConverted = storedSamples.map { DSPComplex(real: $0.i, imag: $0.q) }
     newSDR.stopAsyncRead()
     let t0 = Date.timeIntervalSinceReferenceDate
-    let fmDemodulated = vDSPfmDemodv2(storedSamplesConverted)
+    let fmDemodulated = vDSPfmDemod(storedSamples)
     let t1 = Date.timeIntervalSinceReferenceDate
-    print("Demodulation time: \(t1-t0)s (\(Double(storedSamples.count) / (t1-t0)) samples/s)")
+    print("Demodulation time: \(t1-t0)s (\(Double(storedSamples.count) / (t1-t0)) samples/s, \(storedSamples.count) samples")
     let decimated = stride(from: 0, to: fmDemodulated.count, by: 42).map { fmDemodulated[$0] }
     let stats = (
         min: fmDemodulated.min() ?? 0,
