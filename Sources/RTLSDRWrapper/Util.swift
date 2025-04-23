@@ -104,8 +104,8 @@ public func fmDemod(_ samples: [IQSample]) -> [Float] {
     return diffs
 }
 
-@available(macOS 14.0, *)
 public func vDSPfmDemod(_ samples: [IQSample]) -> [Float] {
+    let n = vDSP_Length(samples.count - 1)
     var diffs = [Float].init(repeating: 0.0, count: samples.count - 1)
     samples.withUnsafeBufferPointer { samplesPtr in
         var basePointer = samplesPtr.baseAddress!
@@ -120,14 +120,15 @@ public func vDSPfmDemod(_ samples: [IQSample]) -> [Float] {
             var tempReal = [Float].init(repeating: 0.0, count: samples.count - 1)
             var tempIm = [Float].init(repeating: 0.0, count: samples.count - 1)
             
-            let stride = 2 // One IQSample struct's worth of memory should be 2 floats
+            let stride = vDSP_Stride(2) // One IQSample struct's worth of memory should be 2 floats
+            let shortStride = vDSP_Stride(1)
             tempReal.withUnsafeMutableBufferPointer { tempRealPtr in
                 tempIm.withUnsafeMutableBufferPointer { tempImPtr in
                     var A: DSPSplitComplex = .init(realp: UnsafeMutablePointer(mutating: i0), imagp: UnsafeMutablePointer(mutating: q0)) // prev
                     var B: DSPSplitComplex = .init(realp: UnsafeMutablePointer(mutating: i1), imagp: UnsafeMutablePointer(mutating: q1)) // curr
                     var C: DSPSplitComplex = .init(realp: tempRealPtr.baseAddress!, imagp: tempImPtr.baseAddress!)
-                    vDSP_zvmul(&A, stride, &B, stride, &C, 1, vDSP_Length(samples.count - 1), 1)
-                    vDSP.phase(C, result: &diffs)
+                    vDSP_zvmul(&A, stride, &B, stride, &C, 1, n, -1)
+                    vDSP_zvphas(&C, shortStride, &diffs, shortStride, n)
                 }
             }
         }
