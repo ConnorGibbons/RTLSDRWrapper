@@ -5,6 +5,7 @@
 //  Created by Connor Gibbons  on 4/18/25.
 //
 import Foundation
+import Accelerate
 
 let KB = 1024
 let MHZ = 1_000_000
@@ -99,6 +100,40 @@ public func fmDemod(_ samples: [IQSample]) -> [Float] {
         let realPart = (i1 * i0) + (q1 * q0)
         let imaginaryPart = (q1 * i0) - (q0 * i1)
         diffs[i - 1] = atan2(imaginaryPart, realPart)
+    }
+    return diffs
+}
+
+public func vDSPfmDemod(_ samples: [IQSample]) -> [Float] {
+    var diffs = [Float].init(repeating: 0.0, count: samples.count - 1)
+    samples.withUnsafeBufferPointer { samplesPtr in
+        var basePointer = samplesPtr.baseAddress!
+        basePointer.withMemoryRebound(to: Float.self, capacity: 2 * samples.count) { ptr in
+            var i0 = UnsafePointer(ptr)
+            var q0 = UnsafePointer(ptr.advanced(by: 1))
+            var i1 = UnsafePointer(ptr.advanced(by: 2))
+            var q1 = UnsafePointer(ptr.advanced(by: 3))
+            
+            // Temp arrays to store z1 * z0(conj.) as vectors:
+            // tempReal[x] = (samples[x].i * samples[x-1].i) + (samples[x].q * samples[x-1].q)
+            // tempIm[x] = (samples[x].q * samples[x-1].i) - (samples[x].i * samples[x-1].q)
+            var tempReal = [Float].init(repeating: 0.0, count: samples.count - 1)
+            var tempIm = [Float].init(repeating: 0.0, count: samples.count - 1)
+            
+            let stride = 2 // One IQSample struct's worth of memory should be 2 floats
+            tempReal.withUnsafeMutableBufferPointer { tempRealPtr in
+                tempIm.withUnsafeMutableBufferPointer { tempImPtr in
+                    var A: DSPSplitComplex = .init(realp: UnsafeMutablePointer(mutating: i0), imagp: UnsafeMutablePointer(mutating: q0)) // prev
+                    var B: DSPSplitComplex = .init(realp: UnsafeMutablePointer(mutating: i1), imagp: UnsafeMutablePointer(mutating: q1)) // curr
+                    var C: DSPSplitComplex = .init(realp: tempRealPtr.baseAddress!, imagp: tempImPtr.baseAddress!)
+                    vDSP_zvmul(&A, stride, &B, stride, &C, 1, vDSP_Length(samples.count - 1), 1)
+                    diffs.withUnsafeMutableBufferPointer { diffsPtr in
+                        let basePtr = diffsPtr.baseAddress!
+                        vDSP_zvphas(&C, 1, basePtr, 1, vDSP_Length(samples.count - 1))
+                    }
+                }
+            }
+        }
     }
     return diffs
 }

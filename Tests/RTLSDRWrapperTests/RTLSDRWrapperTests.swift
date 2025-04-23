@@ -18,7 +18,10 @@ import Foundation
     })
     try await Task.sleep(nanoseconds: UInt64(ONE_SECOND))
     newSDR.stopAsyncRead()
+    let t0 = Date.timeIntervalSinceReferenceDate
     let fmDemodulated = fmDemod(storedSamples)
+    let t1 = Date.timeIntervalSinceReferenceDate
+    print("Demodulation time: \(t1-t0)s (\(Double(storedSamples.count) / (t1-t0)) samples/s)")
     let decimated = stride(from: 0, to: fmDemodulated.count, by: 42).map { fmDemodulated[$0] }
     let stats = (
         min: fmDemodulated.min() ?? 0,
