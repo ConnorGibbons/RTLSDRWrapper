@@ -104,6 +104,7 @@ public func fmDemod(_ samples: [IQSample]) -> [Float] {
     return diffs
 }
 
+@available(macOS 14.0, *)
 public func vDSPfmDemod(_ samples: [IQSample]) -> [Float] {
     var diffs = [Float].init(repeating: 0.0, count: samples.count - 1)
     samples.withUnsafeBufferPointer { samplesPtr in
@@ -126,10 +127,7 @@ public func vDSPfmDemod(_ samples: [IQSample]) -> [Float] {
                     var B: DSPSplitComplex = .init(realp: UnsafeMutablePointer(mutating: i1), imagp: UnsafeMutablePointer(mutating: q1)) // curr
                     var C: DSPSplitComplex = .init(realp: tempRealPtr.baseAddress!, imagp: tempImPtr.baseAddress!)
                     vDSP_zvmul(&A, stride, &B, stride, &C, 1, vDSP_Length(samples.count - 1), 1)
-                    diffs.withUnsafeMutableBufferPointer { diffsPtr in
-                        let basePtr = diffsPtr.baseAddress!
-                        vDSP_zvphas(&C, 1, basePtr, 1, vDSP_Length(samples.count - 1))
-                    }
+                    vDSP.phase(C, result: &diffs)
                 }
             }
         }
@@ -137,24 +135,13 @@ public func vDSPfmDemod(_ samples: [IQSample]) -> [Float] {
     return diffs
 }
 
-public func vDSPfmDemodv2(_ samples: [DSPComplex]) -> [Float] {
-    let n = samples.count - 1
-    var i0 = UnsafeMutableBufferPointer<Float>.allocate(capacity: n)
-    var q0 = UnsafeMutableBufferPointer<Float>.allocate(capacity: n)
-    var i1 = UnsafeMutableBufferPointer<Float>.allocate(capacity: n)
-    var q1 = UnsafeMutableBufferPointer<Float>.allocate(capacity: n)
-    var prod = DSPSplitComplex(realp: .allocate(capacity: n), imagp: .allocate(capacity: n))
-    var diffs = [Float].init(repeating: 0, count: n)
-    samples.withUnsafeBytes { raw in
-        var prevDest = DSPSplitComplex(realp: i0.baseAddress!, imagp: q0.baseAddress!)
-        vDSP_ctoz(raw.baseAddress!.assumingMemoryBound(to: DSPComplex.self), 2, &prevDest, 1, vDSP_Length(n))
-        var currDest = DSPSplitComplex(realp: i1.baseAddress!, imagp: q1.baseAddress!)
-        vDSP_ctoz(raw.baseAddress!.assumingMemoryBound(to: DSPComplex.self).advanced(by: 1), 2, &currDest, 1, vDSP_Length(n))
-        
-        vDSP_zvmul(&currDest, 1, &prevDest, 1, &prod, 1, vDSP_Length(n), 1)
-        
-        vDSP_zvphas(&prod, 1, &diffs, 1, vDSP_Length(n))
-    }
-    
-    return diffs
-}
+//@available(macOS 14.0, *)
+//public func vDSPfmDemodv2(_ samples: [DSPComplex]) -> [Float] {
+//    let n = samples.count - 1
+//    var prev = DSPSplitComplex(realp: .allocate(capacity: n), imagp: .allocate(capacity: n))
+//    vDSP.convert(interleavedComplexVector: samples, toSplitComplexVector: &prev)
+//    var curr = DSPSplitComplex(realp: .allocate(capacity: n), imagp: .allocate(capacity: n))
+//    vDSP.convert(interleavedComplexVector: samples.dropFirst().dropLast(0), toSplitComplexVector: &curr)
+//    let prod =
+//    return diffs
+//}
