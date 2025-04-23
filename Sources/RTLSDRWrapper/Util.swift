@@ -145,7 +145,7 @@ public func vDSPfmDemodv2(_ samples: [DSPComplex]) -> [Float] {
     var curr = DSPSplitComplex(realp: .allocate(capacity: n), imagp: .allocate(capacity: n))
     vDSP.convert(interleavedComplexVector: samples.dropFirst().dropLast(0), toSplitComplexVector: &curr)
     var prod = DSPSplitComplex(realp: .allocate(capacity: n), imagp: .allocate(capacity: n))
-    vDSP_zvmul(&curr, stride, &prev, stride, &prod, stride, vDSPn, 1)
+    vDSP_zvmul(&curr, stride, &prev, stride, &prod, stride, vDSPn, -1)
     var diffs = [Float](repeating: 0, count: n)
     vDSP.phase(prod, result: &diffs)
     return diffs
