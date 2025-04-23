@@ -126,7 +126,7 @@ public func vDSPfmDemod(_ samples: [IQSample]) -> [Float] {
                     var A: DSPSplitComplex = .init(realp: UnsafeMutablePointer(mutating: i0), imagp: UnsafeMutablePointer(mutating: q0)) // prev
                     var B: DSPSplitComplex = .init(realp: UnsafeMutablePointer(mutating: i1), imagp: UnsafeMutablePointer(mutating: q1)) // curr
                     var C: DSPSplitComplex = .init(realp: tempRealPtr.baseAddress!, imagp: tempImPtr.baseAddress!)
-                    vDSP_zvmul(&A, stride, &B, stride, &C, 1, vDSP_Length(samples.count - 1), 1)
+                    vDSP_zvmul(&B, stride, &A, stride, &C, 1, vDSP_Length(samples.count - 1), 1)
                     diffs.withUnsafeMutableBufferPointer { diffsPtr in
                         let basePtr = diffsPtr.baseAddress!
                         vDSP_zvphas(&C, 1, basePtr, 1, vDSP_Length(samples.count - 1))
