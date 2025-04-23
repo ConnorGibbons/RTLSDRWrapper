@@ -137,8 +137,9 @@ public func vDSPfmDemod(_ samples: [IQSample]) -> [Float] {
     return diffs
 }
 
-public func vDSPfmDemodv2(_ samples: [IQSample]) -> [Float] {
+public func vDSPfmDemodv2(_ samples: [DSPComplex]) -> [Float] {
     let n = samples.count - 1
+    print(n)
     var i0 = UnsafeMutableBufferPointer<Float>.allocate(capacity: n)
     var q0 = UnsafeMutableBufferPointer<Float>.allocate(capacity: n)
     var i1 = UnsafeMutableBufferPointer<Float>.allocate(capacity: n)

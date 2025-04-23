@@ -27,6 +27,7 @@ class RTLSDRHandler {
     var isActive: Bool
     var callback: (([IQSample]) -> Void)?
     
+    
     init(device: OpaquePointer) {
         self.device = device
         self.isActive = false

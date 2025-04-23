@@ -2,6 +2,7 @@ import Testing
 @testable import RTLSDRWrapper
 import CRTLSDR
 import Foundation
+import Accelerate
 
 @Test func example() async throws {
     #expect(SDRProbe.getDeviceCount() == CRTLSDR.rtlsdr_get_device_count())
@@ -17,9 +18,10 @@ import Foundation
         storedSamples.append(contentsOf: samples)
     })
     try await Task.sleep(nanoseconds: UInt64(ONE_SECOND))
+    let storedSamplesConverted = storedSamples.map { DSPComplex(real: $0.i, imag: $0.q) }
     newSDR.stopAsyncRead()
     let t0 = Date.timeIntervalSinceReferenceDate
-    let fmDemodulated = vDSPfmDemodv2(storedSamples)
+    let fmDemodulated = vDSPfmDemodv2(storedSamplesConverted)
     let t1 = Date.timeIntervalSinceReferenceDate
     print("Demodulation time: \(t1-t0)s (\(Double(storedSamples.count) / (t1-t0)) samples/s)")
     let decimated = stride(from: 0, to: fmDemodulated.count, by: 42).map { fmDemodulated[$0] }
