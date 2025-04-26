@@ -156,22 +156,8 @@ public class RTLSDR {
         self.tuner = getTunerType(device: devicePointer)
         self.USBStrings = SDRProbe.getDeviceUSBStrings(index: index) ?? ("??", "??", "??")
         self.asyncHandler = RTLSDRHandler(device: devicePointer)
-
-        let initResults = [
-            RTLSDRWrapper.setAGCMode(device: devicePointer, enable: false),
-            RTLSDRWrapper.setTestMode(device: devicePointer, enable: false),
-            RTLSDRWrapper.setOffsetTuning(device: devicePointer, enable: false),
-            RTLSDRWrapper.setManualGainMode(device: devicePointer, enable: false),
-            RTLSDRWrapper.setTunerBandwidth(device: devicePointer, bandwidth: 0),
-            RTLSDRWrapper.setSampleRate(device: devicePointer, rate: Int(2.048e6)),
-            RTLSDRWrapper.setCenterFrequency(device: devicePointer, frequency: 94*MHZ)
-        ]
-        let initOps = ["AGC", "disableTestMode", "disableOffsetTuning", "disableManualGain", "setAutomaticBandwidth", "setSampleRate", "setDefaultFreq"]
-        for (i, result) in initResults.enumerated() {
-            if (!result) {
-                print("!! Warning: Init operation failed: \(initOps[i])")
-            }
-        }
+        self.initOperations()
+        self.primeUSB()
     }
 
     deinit {
@@ -204,4 +190,30 @@ public class RTLSDR {
     public func stopAsyncRead() {
         self.asyncHandler.stopAsyncRead()
     }
+    
+    // I don't know why this needs to be done but it does, or else USB read error happens
+    private func primeUSB() {
+        var storedSamples: [DSPComplex] = []
+        storedSamples.append(contentsOf: syncReadSamples(count: 16384))
+        storedSamples.removeAll(keepingCapacity: true)
+    }
+    
+    private func initOperations() {
+        let initResults = [
+            RTLSDRWrapper.setAGCMode(device: devicePointer, enable: false),
+            RTLSDRWrapper.setTestMode(device: devicePointer, enable: false),
+            RTLSDRWrapper.setOffsetTuning(device: devicePointer, enable: false),
+            RTLSDRWrapper.setManualGainMode(device: devicePointer, enable: false),
+            RTLSDRWrapper.setTunerBandwidth(device: devicePointer, bandwidth: 0),
+            RTLSDRWrapper.setSampleRate(device: devicePointer, rate: Int(2.4e6)),
+            RTLSDRWrapper.setCenterFrequency(device: devicePointer, frequency: 24*MHZ)
+        ]
+        let initOps = ["AGC", "disableTestMode", "disableOffsetTuning", "disableManualGain", "setAutomaticBandwidth", "setSampleRate", "setDefaultFreq"]
+        for (i, result) in initResults.enumerated() {
+            if (!result) {
+                print("!! Warning: Init operation failed: \(initOps[i])")
+            }
+        }
+    }
+    
 }
