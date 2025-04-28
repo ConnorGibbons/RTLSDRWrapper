@@ -43,16 +43,17 @@ class RTLSDRHandler {
         callback(IQSamplesFromBuffer(buff))
     }
     
-    // **Always** call this function on a background thread! It will block until stopAsyncRead is called.
     func startAsyncRead(callback: @escaping ([DSPComplex]) -> Void) {
         let retainedSelf = Unmanaged.passRetained(self)
         guard !isActive else { return }
         self.callback = callback
         isActive = true
-        let result = rtlsdr_read_async(self.device, rtlsdr_handler, retainedSelf.toOpaque(), wBUF_NUM, wBUF_LEN)
-        self.isActive = false
-        print("Async read ended, code: \(result)")
-        retainedSelf.release()
+        DispatchQueue.global(qos: .userInitiated).async {
+            let result = rtlsdr_read_async(self.device, rtlsdr_handler, retainedSelf.toOpaque(), wBUF_NUM, wBUF_LEN)
+            self.isActive = false
+            print("Async read ended, code: \(result)")
+            retainedSelf.release()
+        }
     }
     
     func stopAsyncRead() {
