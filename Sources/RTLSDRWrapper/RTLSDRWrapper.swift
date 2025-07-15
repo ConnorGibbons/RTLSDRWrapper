@@ -224,7 +224,7 @@ func setAGCMode(device: OpaquePointer, enable: Bool) -> Bool {
     return 0 == CRTLSDR.rtlsdr_set_agc_mode(device, Int32(bool: enable))
 }
 
-public enum DirectSamplingMode: Int32 {
+public enum DirectSamplingMode: Int32, Sendable {
     case disabled = 0
     case iADC = 1
     case qADC = 2
