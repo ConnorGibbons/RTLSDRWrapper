@@ -6,9 +6,9 @@ import Accelerate
 
 @Test func example() async throws {
     #expect(SDRProbe.getDeviceCount() == CRTLSDR.rtlsdr_get_device_count())
-    let newSDR = try RTLSDR.init(deviceIndex: 0)
+    let newSDR = try RTLSDR_USB.init(deviceIndex: 0)
     try newSDR.setCenterFrequency(94*MHZ)
-    try newSDR.setDigitalAGC(true)
+    try newSDR.setDigitalAGCEnabled(true)
     print(newSDR.signalChainSummary)
     try await Task.sleep(nanoseconds: UInt64(Double(ONE_SECOND)*0.5))
     var storedSamples: [DSPComplex] = []
@@ -31,4 +31,15 @@ import Accelerate
         nanCount: fmDemodulated.filter { $0.isNaN }.count
     )
     print("Stats → min: \(stats.min), max: \(stats.max), first: \(stats.first), NaNs: \(stats.nanCount)")
+}
+
+
+@Test func RTLSDR_TCPConnectionTest() throws {
+    do {
+        let localTCPSDR = try RTLSDR_TCP(host: "127.0.0.1", port: UInt16(1234))
+    }
+    catch {
+        print(error)
+        assert(false)
+    }
 }

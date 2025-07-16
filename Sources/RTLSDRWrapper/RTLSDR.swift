@@ -12,6 +12,7 @@ public enum RTLSDRError: LocalizedError {
     case deviceNotFound
     case failedToInitialize
     case operationFailed(operation: String)
+    case cantEstablishTCPConnection
     
     public var errorDescription: String? {
         switch self {
@@ -21,6 +22,8 @@ public enum RTLSDRError: LocalizedError {
             return "Failed to initialize rtl-sdr"
         case .deviceNotFound:
             return "No rtl-sdr exists at this index -- try a different index or unplug the device."
+        case .cantEstablishTCPConnection:
+            return "Unable to establish connection to rtl_tcp server"
         }
     }
     
