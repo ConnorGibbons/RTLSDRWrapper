@@ -309,17 +309,15 @@ public class RTLSDR_TCP: RTLSDR, @unchecked Sendable {
             print("\(self.deviceName): Unable to start sync read: connection failed.")
             return []
         }
-        var receivedSamples: [DSPComplex] = .init(repeating: .init(real: 0, imag: 0), count: count)
-        var wrappedReceivedSamples: Wrapped<[DSPComplex]> = .init(value: receivedSamples)
-        var validSampleCount: Wrapped<Int> = .init(value: 0)
+        let wrappedReceivedSamples: Wrapped<[DSPComplex]> = .init(value: [])
         let receivedSamplesSemaphore = DispatchSemaphore(value: 0)
-        self.syncReceiveLoop(buffer: wrappedReceivedSamples, validCount: validSampleCount, semaphore: receivedSamplesSemaphore)
+        self.syncReceiveLoop(buffer: wrappedReceivedSamples, receiveAmount: count, semaphore: receivedSamplesSemaphore)
         receivedSamplesSemaphore.wait()
         self.closeConnection()
         return wrappedReceivedSamples.value
     }
     
-    private func syncReceiveLoop(buffer: Wrapped<[DSPComplex]>, validCount: Wrapped<Int>, semaphore: DispatchSemaphore) {
+    private func syncReceiveLoop(buffer: Wrapped<[DSPComplex]>, receiveAmount: Int, semaphore: DispatchSemaphore) {
         let name = self.deviceName
         guard self.activeConnection else {
             print("\(name): Cancelling receive loop -- connection not active.")
@@ -328,38 +326,29 @@ public class RTLSDR_TCP: RTLSDR, @unchecked Sendable {
         self.connection.receive(minimumIncompleteLength: 2, maximumLength: Int.max, completion: { data, context, isComplete, error in
             guard error == nil else {
                 print("\(name): Stopping receive loop due to error: \(error!)")
+                semaphore.signal()
                 return
             }
             if let rxData = data {
-                let t0 = DispatchTime.now()
+                var timer = TimeOperation(operationName: "syncProcessSamples")
                 let samples: [UInt8] = Array(rxData)
                 let complexSamples = IQSamplesFromBuffer(samples)
-                self.writeToPreallocatedBuffer(buffer: buffer, validCount: validCount, vals: complexSamples)
-                let t1 = DispatchTime.now()
-                print("Receieved & handled \(complexSamples.count) in \(Double(t1.uptimeNanoseconds - t0.uptimeNanoseconds)/1_000_000) ms")
-                if(validCount.value >= buffer.value.count) {
+                buffer.value.append(contentsOf: complexSamples)
+                if(buffer.value.count >= receiveAmount) {
+                    let diff = buffer.value.count - receiveAmount
+                    buffer.value.removeLast(diff)
                     semaphore.signal()
                     return
                 }
+                print(timer.stop())
             }
             if isComplete {
                 print("\(name): Stopping receive loop early -- final message received.")
+                semaphore.signal()
                 return
             }
-            self.syncReceiveLoop(buffer: buffer, validCount: validCount, semaphore: semaphore)
+            self.syncReceiveLoop(buffer: buffer, receiveAmount: receiveAmount, semaphore: semaphore)
         })
-    }
-    
-    private func writeToPreallocatedBuffer(buffer: Wrapped<[DSPComplex]>, validCount: Wrapped<Int>, vals: [DSPComplex]) {
-        let numToWrite = (validCount.value + vals.count < buffer.value.count) ? vals.count : (buffer.value.count - validCount.value)
-        for i in 0..<numToWrite {
-            guard validCount.value + i < buffer.value.count else {
-                print("Write out of bounds — skipping remaining samples.")
-                break
-            }
-            buffer.value[validCount.value + i] = vals[i]
-        }
-        validCount.value += numToWrite
     }
     
     func asyncReadSamples(callback: @escaping ([DSPComplex]) -> Void) {
@@ -390,8 +379,10 @@ public class RTLSDR_TCP: RTLSDR, @unchecked Sendable {
                 return
             }
             if let rxData = data {
+                var timer = TimeOperation(operationName: "asyncRead")
                 let samples: [UInt8] = Array(rxData)
                 callback(IQSamplesFromBuffer(samples))
+                print(timer.stop())
             }
             if isComplete {
                 print("\(name): Stopping receive loop, final message receieved. ")

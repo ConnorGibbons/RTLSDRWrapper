@@ -66,10 +66,11 @@ import Accelerate
 }
 
 @Test func RTLSDR_TCPReceiveSyncSamplesTest() throws {
+    let receieveAmount = 12000000
     let remoteSDR = try RTLSDR_TCP(host: "127.0.0.1", port: UInt16(1234))
     try remoteSDR.setSampleRate(Int(1e6))
-    let samples = remoteSDR.syncReadSamples(count: 12000000)
-    assert(samples.count == 12000000)
+    let samples = remoteSDR.syncReadSamples(count: receieveAmount)
+    assert(samples.count == receieveAmount)
 }
 
 @Test func RTLSDR_TCPReceiveAsyncSamplesTest() throws {

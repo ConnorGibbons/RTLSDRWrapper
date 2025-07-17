@@ -152,6 +152,7 @@ struct TimeOperation {
         self.t0 = DispatchTime.distantFuture
         self.t1 = DispatchTime.distantFuture
         self.operationName = operationName
+        self.start()
     }
     
     mutating func start() {
