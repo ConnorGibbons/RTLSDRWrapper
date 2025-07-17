@@ -141,3 +141,34 @@ public func vDSPfmDemodv2(_ samples: [DSPComplex]) -> [Float] {
     }
     return diffs
 }
+
+
+public struct TimeOperation {
+    var t0: DispatchTime
+    var t1: DispatchTime
+    let operationName: String
+    
+    public init(operationName: String) {
+        self.t0 = DispatchTime.distantFuture
+        self.t1 = DispatchTime.distantFuture
+        self.operationName = operationName
+        self.start()
+    }
+    
+    public mutating func start() {
+        t0 = .now()
+    }
+    
+    public mutating func stop() -> String {
+        defer {
+            t0 = .distantFuture
+            t1 = .distantFuture
+        }
+        t1 = .now()
+        guard t0 != .distantFuture else {
+            return "\(operationName) never started."
+        }
+        return "\(operationName) took \(Double(DispatchTime.now().uptimeNanoseconds - t0.uptimeNanoseconds) / 1_000_000) ms"
+    }
+    
+}
