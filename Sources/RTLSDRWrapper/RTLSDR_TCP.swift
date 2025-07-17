@@ -330,7 +330,6 @@ public class RTLSDR_TCP: RTLSDR, @unchecked Sendable {
                 return
             }
             if let rxData = data {
-                var timer = TimeOperation(operationName: "syncProcessSamples")
                 let samples: [UInt8] = Array(rxData)
                 let complexSamples = IQSamplesFromBuffer(samples)
                 buffer.value.append(contentsOf: complexSamples)
@@ -340,7 +339,6 @@ public class RTLSDR_TCP: RTLSDR, @unchecked Sendable {
                     semaphore.signal()
                     return
                 }
-                print(timer.stop())
             }
             if isComplete {
                 print("\(name): Stopping receive loop early -- final message received.")
@@ -379,10 +377,8 @@ public class RTLSDR_TCP: RTLSDR, @unchecked Sendable {
                 return
             }
             if let rxData = data {
-                var timer = TimeOperation(operationName: "asyncRead")
                 let samples: [UInt8] = Array(rxData)
                 callback(IQSamplesFromBuffer(samples))
-                print(timer.stop())
             }
             if isComplete {
                 print("\(name): Stopping receive loop, final message receieved. ")
