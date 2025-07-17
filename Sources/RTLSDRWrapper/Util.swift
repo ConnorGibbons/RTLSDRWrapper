@@ -143,23 +143,23 @@ public func vDSPfmDemodv2(_ samples: [DSPComplex]) -> [Float] {
 }
 
 
-struct TimeOperation {
+public struct TimeOperation {
     var t0: DispatchTime
     var t1: DispatchTime
     let operationName: String
     
-    init(operationName: String) {
+    public init(operationName: String) {
         self.t0 = DispatchTime.distantFuture
         self.t1 = DispatchTime.distantFuture
         self.operationName = operationName
         self.start()
     }
     
-    mutating func start() {
+    public mutating func start() {
         t0 = .now()
     }
     
-    mutating func stop() -> String {
+    public mutating func stop() -> String {
         defer {
             t0 = .distantFuture
             t1 = .distantFuture
