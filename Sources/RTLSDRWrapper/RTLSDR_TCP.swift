@@ -41,6 +41,16 @@ public class RTLSDR_TCP: RTLSDR, @unchecked Sendable {
         guard connectionResult == .success else { throw RTLSDRError.cantEstablishTCPConnection }
         executeBacklog()
     }
+    func closeConnection() {
+        guard activeConnection else { return }
+        let oldStateUpdateHandler = connection.stateUpdateHandler
+        let oldEndpoint = connection.endpoint
+        self.connection.cancel()
+        let newConnection = NWConnection(to: oldEndpoint, using: .tcp)
+        newConnection.stateUpdateHandler = oldStateUpdateHandler
+        self.connection = newConnection
+    }
+    
     // Can only send commands when a network connection is open, trying to keep this transparent to the user by keeping a list of commands to send immediately upon connection.
     private var commandBacklog: [() throws -> Void] = []
     
@@ -247,7 +257,7 @@ public class RTLSDR_TCP: RTLSDR, @unchecked Sendable {
         self.tuner = .unknown
         self.dedicatedQueue = DispatchQueue(label: "tcpRTLSDRQueue\(host):\(port)")
         
-        guard testConnection(connection) else {
+        guard testConnection() else {
             print("Failed to establish TCP connection to RTLSDR. Check if rtltcp server is running, and if host/port is correct.")
             throw RTLSDRError.failedToInitialize
         }
@@ -268,22 +278,22 @@ public class RTLSDR_TCP: RTLSDR, @unchecked Sendable {
         }
     }
     
-    private func testConnection(_ connection: NWConnection) -> Bool {
-        let oldStateHandler = connection.stateUpdateHandler.take()
+    private func testConnection() -> Bool {
+        let oldStateHandler = self.connection.stateUpdateHandler.take()
         let connectSem = DispatchSemaphore(value: 0)
         let newStateHandler: @Sendable (NWConnection.State) -> Void = { newState in
             if(newState == .ready) { connectSem.signal() }
             if(newState == .cancelled) { connectSem.signal() }
         }
         let testQueue = DispatchQueue(label: "RTLSDRReachabilityTestQueue")
-        connection.stateUpdateHandler = newStateHandler
-        connection.start(queue: testQueue)
+        self.connection.stateUpdateHandler = newStateHandler
+        self.connection.start(queue: testQueue)
         let connectResult = connectSem.wait(timeout: DispatchTime.now() + 1)
         guard connectResult == .success else { return false }
-        connection.cancel()
+        self.closeConnection()
         // Putting second wait() here so connection is recognized as closed prior to initOperations being called
         connectSem.wait()
-        connection.stateUpdateHandler = oldStateHandler
+        self.connection.stateUpdateHandler = oldStateHandler
         return true
     }
     
@@ -292,19 +302,20 @@ public class RTLSDR_TCP: RTLSDR, @unchecked Sendable {
             print("Can't start sync read: connection is already active.")
             return []
         }
-        let connectionEstasblishedSemaphore = DispatchSemaphore(value: 0)
-        self.connection.stateUpdateHandler = { state in
-            if state == .ready {
-                connectionEstasblishedSemaphore.signal()
-            }
+        do {
+            try self.startConnection()
+        }
+        catch {
+            print("\(self.deviceName): Unable to start sync read: connection failed.")
+            return []
         }
         var receivedSamples: [DSPComplex] = .init(repeating: .init(real: 0, imag: 0), count: count)
         var wrappedReceivedSamples: Wrapped<[DSPComplex]> = .init(value: receivedSamples)
         var validSampleCount: Wrapped<Int> = .init(value: 0)
         let receivedSamplesSemaphore = DispatchSemaphore(value: 0)
-        connection.start(queue: self.dedicatedQueue)
         self.syncReceiveLoop(buffer: wrappedReceivedSamples, validCount: validSampleCount, semaphore: receivedSamplesSemaphore)
         receivedSamplesSemaphore.wait()
+        self.closeConnection()
         return wrappedReceivedSamples.value
     }
     
@@ -314,15 +325,18 @@ public class RTLSDR_TCP: RTLSDR, @unchecked Sendable {
             print("\(name): Cancelling receive loop -- connection not active.")
             return
         }
-        self.connection.receiveMessage(completion: { data, context, isComplete, error in
+        self.connection.receive(minimumIncompleteLength: 2, maximumLength: Int.max, completion: { data, context, isComplete, error in
             guard error == nil else {
                 print("\(name): Stopping receive loop due to error: \(error!)")
                 return
             }
             if let rxData = data {
+                let t0 = DispatchTime.now()
                 let samples: [UInt8] = Array(rxData)
-                var complexSamples = IQSamplesFromBuffer(samples)
+                let complexSamples = IQSamplesFromBuffer(samples)
                 self.writeToPreallocatedBuffer(buffer: buffer, validCount: validCount, vals: complexSamples)
+                let t1 = DispatchTime.now()
+                print("Receieved & handled \(complexSamples.count) in \(Double(t1.uptimeNanoseconds - t0.uptimeNanoseconds)/1_000_000) ms")
                 if(validCount.value >= buffer.value.count) {
                     semaphore.signal()
                     return
@@ -353,18 +367,14 @@ public class RTLSDR_TCP: RTLSDR, @unchecked Sendable {
             print("Can't start async read: connection is already active.")
             return
         }
-        let connectionEstasblishedSemaphore = DispatchSemaphore(value: 0)
-        self.connection.stateUpdateHandler = { state in
-            if state == .ready {
-                connectionEstasblishedSemaphore.signal()
-            }
+        
+        do {
+            try self.startConnection()
         }
-        connection.start(queue: self.dedicatedQueue)
-        let connectionEstablishedResult = connectionEstasblishedSemaphore.wait(timeout: .now() + 1)
-        guard connectionEstablishedResult == .success else {
-            print("Failed to establish TCP connection to RTLSDR. Check if rtltcp server is running, and if host/port is correct.")
-            return
+        catch {
+            print("\(self.deviceName): Can't start async read, connection failed. \(error)")
         }
+        
         self.asyncReceieveLoop(callback: callback)
     }
     
@@ -374,7 +384,7 @@ public class RTLSDR_TCP: RTLSDR, @unchecked Sendable {
             print("\(name): Cancelling receive loop -- connection not active.")
             return
         }
-        connection.receiveMessage(completion: { data, context, isComplete, error in
+        connection.receive(minimumIncompleteLength: 2, maximumLength: Int.max, completion: { data, context, isComplete, error in
             guard error == nil else {
                 print("\(name): Stopping receive loop due to error: \(error!)")
                 return
@@ -393,9 +403,16 @@ public class RTLSDR_TCP: RTLSDR, @unchecked Sendable {
     
     func stopAsyncRead() {
         guard self.activeConnection else { return }
-        self.connection.cancel()
+        self.closeConnection()
     }
     
+    
+    deinit {
+        print("Deinit called")
+        if(self.activeConnection) {
+            self.connection.cancel()
+        }
+    }
     
 }
 
