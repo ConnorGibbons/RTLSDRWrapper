@@ -145,7 +145,7 @@ func getFrequencyCorrection(device: OpaquePointer) -> Int {
     return Int(ppm)
 }
 
-enum RTLSDRTunerType: Int {
+public enum RTLSDRTunerType: Int {
     case unknown = 0
     case E4000 = 1
     case FC0012 = 2

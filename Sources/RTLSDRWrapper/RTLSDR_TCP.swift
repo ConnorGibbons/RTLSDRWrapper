@@ -10,8 +10,8 @@ import Network
 
 @available(macOS 10.14, *)
 public class RTLSDR_TCP: RTLSDR, @unchecked Sendable {
-    var deviceName: String
-    var tuner: RTLSDRTunerType
+    public var deviceName: String
+    public var tuner: RTLSDRTunerType
     var dedicatedQueue: DispatchQueue
     
     
@@ -297,7 +297,7 @@ public class RTLSDR_TCP: RTLSDR, @unchecked Sendable {
         return true
     }
     
-    func syncReadSamples(count: Int) -> [DSPComplex] {
+    public func syncReadSamples(count: Int) -> [DSPComplex] {
         guard !self.activeConnection else {
             print("Can't start sync read: connection is already active.")
             return []
@@ -351,7 +351,7 @@ public class RTLSDR_TCP: RTLSDR, @unchecked Sendable {
         })
     }
     
-    func asyncReadSamples(callback: @escaping ([DSPComplex]) -> Void) {
+    public func asyncReadSamples(callback: @escaping ([DSPComplex]) -> Void) {
         guard !self.activeConnection else {
             print("Can't start async read: connection is already active.")
             return
@@ -392,7 +392,7 @@ public class RTLSDR_TCP: RTLSDR, @unchecked Sendable {
         })
     }
     
-    func stopAsyncRead() {
+    public func stopAsyncRead() {
         guard self.activeConnection else { return }
         self.closeConnection()
     }

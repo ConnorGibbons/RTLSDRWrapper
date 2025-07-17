@@ -29,7 +29,7 @@ public enum RTLSDRError: LocalizedError {
     
 }
 
-protocol RTLSDR {
+public protocol RTLSDR {
     var deviceName: String { get }
     var tuner: RTLSDRTunerType { get }
     

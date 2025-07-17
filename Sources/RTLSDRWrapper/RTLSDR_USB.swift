@@ -11,10 +11,10 @@ import Accelerate
 @available(macOS 14.0, *)
 @Observable
 public class RTLSDR_USB: RTLSDR {
-    var directSamplingMode: DirectSamplingMode?
+    public var directSamplingMode: DirectSamplingMode?
     let devicePointer: OpaquePointer
-    let deviceName: String
-    let tuner: RTLSDRTunerType
+    public let deviceName: String
+    public let tuner: RTLSDRTunerType
     let USBStrings: (String, String, String)
     let index: Int
     let asyncHandler: RTLSDRHandler
