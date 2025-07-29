@@ -377,6 +377,7 @@ public class RTLSDR_TCP: RTLSDR, @unchecked Sendable {
         connection.receive(minimumIncompleteLength: 2, maximumLength: Int.max, completion: { data, context, isComplete, error in
             guard error == nil else {
                 print("\(name): Stopping receive loop due to error: \(error!)")
+                self.closeConnection()
                 return
             }
             if let rxData = data {
@@ -385,6 +386,7 @@ public class RTLSDR_TCP: RTLSDR, @unchecked Sendable {
             }
             if isComplete {
                 print("\(name): Stopping receive loop, final message receieved. ")
+                self.closeConnection()
                 return
             }
             self.asyncReceieveLoop(callback: callback)
