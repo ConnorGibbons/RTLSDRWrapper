@@ -4,6 +4,9 @@ import PackageDescription
 
 let package = Package(
     name: "RTLSDRWrapper",
+    platforms: [
+        .macOS(.v10_13) // High Sierra
+        ],
     products: [
         .library(name: "RTLSDRWrapper", targets: ["RTLSDRWrapper"]),
     ],

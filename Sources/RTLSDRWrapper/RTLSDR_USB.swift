@@ -8,8 +8,6 @@
 import Foundation
 import Accelerate
 
-@available(macOS 14.0, *)
-@Observable
 public class RTLSDR_USB: RTLSDR {
     public var directSamplingMode: DirectSamplingMode?
     public let deviceName: String
