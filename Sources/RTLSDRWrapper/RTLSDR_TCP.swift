@@ -12,6 +12,9 @@ import Network
 public class RTLSDR_TCP: RTLSDR, @unchecked Sendable {
     public var deviceName: String
     public var tuner: RTLSDRTunerType
+    public var isActive: Bool {
+        return activeConnection
+    }
     var dedicatedQueue: DispatchQueue
     
     

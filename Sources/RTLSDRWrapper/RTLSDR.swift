@@ -31,6 +31,7 @@ public enum RTLSDRError: LocalizedError {
 
 public protocol RTLSDR {
     var deviceName: String { get }
+    var isActive: Bool { get }
     var tuner: RTLSDRTunerType { get }
     
     var centerFrequency: Int? { get }

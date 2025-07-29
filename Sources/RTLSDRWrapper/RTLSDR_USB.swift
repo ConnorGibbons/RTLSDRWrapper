@@ -12,9 +12,10 @@ import Accelerate
 @Observable
 public class RTLSDR_USB: RTLSDR {
     public var directSamplingMode: DirectSamplingMode?
-    let devicePointer: OpaquePointer
     public let deviceName: String
     public let tuner: RTLSDRTunerType
+    public var isActive: Bool
+    let devicePointer: OpaquePointer
     let USBStrings: (String, String, String)
     let index: Int
     let asyncHandler: RTLSDRHandler
@@ -135,6 +136,7 @@ public class RTLSDR_USB: RTLSDR {
             throw RTLSDRError.deviceNotFound
         }
         self.devicePointer = tdevicePointer
+        self.isActive = false
         self.deviceName = SDRProbe.getDeviceName(index: index) ?? "Unknown Device"
         self.tuner = getTunerType(device: devicePointer)
         self.USBStrings = SDRProbe.getDeviceUSBStrings(index: index) ?? ("??", "??", "??")
@@ -162,16 +164,26 @@ public class RTLSDR_USB: RTLSDR {
     }
 
     public func syncReadSamples(count: Int) -> [DSPComplex] {
+        self.isActive = true
+        defer {
+            self.isActive = false
+        }
         _ = resetBuffer(device: devicePointer)
         return readSamples(device: devicePointer, sampleCount: count)
     }
 
     public func asyncReadSamples(callback: @escaping ([DSPComplex]) -> Void) {
+        guard !self.isActive else {
+            print("Error: Can't start async read while device is already active.")
+            return
+        }
+        self.isActive = true
         self.asyncHandler.startAsyncRead(callback: callback)
     }
 
     public func stopAsyncRead() {
         self.asyncHandler.stopAsyncRead()
+        self.isActive = false
     }
     
     // I don't know why this needs to be done but it does, or else USB read error happens
