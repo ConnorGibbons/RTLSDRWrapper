@@ -11,7 +11,7 @@ let package = Package(
         .library(name: "RTLSDRWrapper", targets: ["RTLSDRWrapper"]),
     ],
     targets: [
-        .binaryTarget(name: "libusb", path: "./XCFrameworks/libusb.xcframework"),
+        .binaryTarget(name: "libusb", path: "./XCFrameworks/libusb-universal.xcframework"),
         .target(
             name: "CRTLSDR",
             dependencies: ["libusb"],
