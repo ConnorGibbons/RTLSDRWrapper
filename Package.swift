@@ -1,4 +1,6 @@
-// swift-tools-version: 6.1
+// swift-tools-version:5.3
+// 5.3 needed for .binaryTarget
+// Don't try putting a space in front of the version number or Swift will get mad
 
 import PackageDescription
 
