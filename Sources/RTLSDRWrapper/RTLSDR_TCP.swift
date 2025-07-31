@@ -282,7 +282,8 @@ public class RTLSDR_TCP: RTLSDR, @unchecked Sendable {
     }
     
     private func testConnection() -> Bool {
-        let oldStateHandler = self.connection.stateUpdateHandler.take()
+        let oldStateHandler = self.connection.stateUpdateHandler
+        self.connection.stateUpdateHandler = nil
         let connectSem = DispatchSemaphore(value: 0)
         let newStateHandler: @Sendable (NWConnection.State) -> Void = { newState in
             if(newState == .ready) { connectSem.signal() }
