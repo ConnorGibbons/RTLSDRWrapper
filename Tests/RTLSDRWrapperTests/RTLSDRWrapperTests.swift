@@ -4,7 +4,7 @@ import CRTLSDR
 import Foundation
 import Accelerate
 
-@Test func example() async throws {
+@Test func testConnectAndDemodulateFM() async throws {
     #expect(SDRProbe.getDeviceCount() == CRTLSDR.rtlsdr_get_device_count())
     let newSDR = try RTLSDR_USB.init(deviceIndex: 0)
     try newSDR.setCenterFrequency(94*MHZ)

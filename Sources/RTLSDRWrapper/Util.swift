@@ -13,7 +13,8 @@ let MSPS = 1_000_000
 let ONE_SECOND = 1_000_000_000
 let NORMALIZATION_FACTOR: Float = 1 / 127.5
 
-nonisolated(unsafe) let FLOAT_FROM_UINT8_LUT: UnsafePointer<Float> = (0...255).map { Float($0) * (NORMALIZATION_FACTOR) }.withUnsafeBufferPointer { UnsafePointer($0.baseAddress!) }
+// Don't use this, it's here in case at some point it becomes desirable to use a lookup table at some point.
+let FLOAT_FROM_UINT8_LUT: [Float] = (0...255).map { Float($0) * (NORMALIZATION_FACTOR) - 1 }
 
 func IQSamplesFromBuffer(_ buffer: [UInt8]) -> [DSPComplex] {
     let count = buffer.count & ~1
@@ -35,9 +36,9 @@ func IQSamplesFromBufferLUT(_ buffer: [UInt8]) -> [DSPComplex] {
         print("IQ Sample buffer has uneven length, something might be wrong, ignoring last pair.")
         count -= 1
     }
-    for index in stride(from: 0, to: buffer.count, by: 2) {
+    for index in stride(from: 0, to: count, by: 2) {
         let I: Float = FLOAT_FROM_UINT8_LUT[Int(buffer[index])]
-        let Q: Float = FLOAT_FROM_UINT8_LUT[Int(buffer[index])]
+        let Q: Float = FLOAT_FROM_UINT8_LUT[Int(buffer[index + 1])]
         samples.append(DSPComplex(real: I, imag: Q))
     }
     return samples
