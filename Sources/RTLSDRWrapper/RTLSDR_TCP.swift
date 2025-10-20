@@ -17,11 +17,12 @@ public class RTLSDR_TCP: RTLSDR, @unchecked Sendable {
     }
     var dedicatedQueue: DispatchQueue
     
-    
+    // --- Connection ---
     var connection: NWConnection
     var activeConnection: Bool {
         return connection.state == .ready
     }
+    
     func startConnection() throws {
         guard !activeConnection else { return }
         let oldStateUpdateHandler = connection.stateUpdateHandler
@@ -44,6 +45,14 @@ public class RTLSDR_TCP: RTLSDR, @unchecked Sendable {
         guard connectionResult == .success else { throw RTLSDRError.cantEstablishTCPConnection }
         executeBacklog()
     }
+    
+    /// Sends raw Data to the rtl-tcp server.
+    /// This is really only here to enable the "relay" functionality of SwiftDSC/SwiftAIS -- it allows the downstream client to control the rtl-tcp device.
+    public func sendRawData(_ data: Data) throws {
+        guard activeConnection else { return }
+        connection.send(content: data, completion: .contentProcessed({_ in }))
+    }
+    
     func closeConnection() {
         guard activeConnection else { return }
         let oldStateUpdateHandler = connection.stateUpdateHandler
@@ -54,6 +63,7 @@ public class RTLSDR_TCP: RTLSDR, @unchecked Sendable {
         self.connection = newConnection
     }
     
+    // --- Commands ---
     // Can only send commands when a network connection is open, trying to keep this transparent to the user by keeping a list of commands to send immediately upon connection.
     private var commandBacklog: [() throws -> Void] = []
     
@@ -245,6 +255,7 @@ public class RTLSDR_TCP: RTLSDR, @unchecked Sendable {
         })
     }
     
+    // --- Initialization ---
     public init(host: String, port: UInt16) throws {
         let host = NWEndpoint.Host(host)
         guard let port = NWEndpoint.Port(rawValue: port) else {
@@ -301,6 +312,7 @@ public class RTLSDR_TCP: RTLSDR, @unchecked Sendable {
         return true
     }
     
+    // --- Sample Reading / Handling ---
     public func syncReadSamples(count: Int) -> [DSPComplex] {
         guard !self.activeConnection else {
             print("Can't start sync read: connection is already active.")
