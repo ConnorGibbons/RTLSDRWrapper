@@ -16,7 +16,7 @@ public class RTLSDR_USB: RTLSDR {
     let devicePointer: OpaquePointer
     let USBStrings: (String, String, String)
     let index: Int
-    let asyncHandler: RTLSDRHandler
+    let asyncHandler: RTLSDRAsyncHandler
 
     public var centerFrequency: Int? {
         get {
@@ -138,7 +138,7 @@ public class RTLSDR_USB: RTLSDR {
         self.deviceName = SDRProbe.getDeviceName(index: index) ?? "Unknown Device"
         self.tuner = getTunerType(device: devicePointer)
         self.USBStrings = SDRProbe.getDeviceUSBStrings(index: index) ?? ("??", "??", "??")
-        self.asyncHandler = RTLSDRHandler(device: devicePointer)
+        self.asyncHandler = RTLSDRAsyncHandler(device: devicePointer)
         self.initOperations()
         self.primeUSB()
     }

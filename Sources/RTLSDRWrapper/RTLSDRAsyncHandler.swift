@@ -10,24 +10,26 @@ import CRTLSDR
 import Accelerate
 
 let wBUF_NUM: UInt32 = 15
-let wBUF_LEN: UInt32 = 16 * 32 * 512
+let wBUF_LEN: UInt32 = 16 * 32 * 512 // Note: Must be a multiple of 512
 
 
+/// A pointer to this function & a pointer to an RTLSDRAsyncHandler instance are provided to rtlsdr-read-async.
+/// When a buffer is ready, this function is called, and ctx is an opaque pointer to the same RTLSDRAsyncHandler instance, letting us call RTLSDRAsyncHandler.handleBuffer
 @_cdecl("rtlsdr_handler")
 func rtlsdr_handler(_ buf: UnsafeMutablePointer<UInt8>?, _ len: UInt32, _ ctx: UnsafeMutableRawPointer?) {
     guard ctx != nil, buf != nil else {
         return
     }
-    let handler = Unmanaged<RTLSDRHandler>.fromOpaque(ctx!).takeUnretainedValue()
+    let handler = Unmanaged<RTLSDRAsyncHandler>.fromOpaque(ctx!).takeUnretainedValue()
     handler.handleBuffer(buf, len)
 }
 
-
-class RTLSDRHandler {
+/// Class for handling RTL-SDR (USB) async reads.
+/// This shouldn't be touched by the user, just internal to RTLSDR_USB
+class RTLSDRAsyncHandler {
     let device: OpaquePointer
     var isActive: Bool
     var callback: (([DSPComplex]) -> Void)?
-    
     
     init(device: OpaquePointer) {
         self.device = device
@@ -43,16 +45,21 @@ class RTLSDRHandler {
         callback(IQSamplesFromBuffer(buff))
     }
     
-    // **Always** call this function on a background thread!! It will block until stopAsyncRead is called.
+    /// Starts an async read on the RTL-SDR referred to by self.device.
+    /// Calls 'callback' with a buffer of samples repeatedly until stopped.
+    /// Cycles through 15 buffers of length 262,144
+    /// **Always** call this function on a background thread!! It will block until stopAsyncRead is called.
     func startAsyncRead(callback: @escaping ([DSPComplex]) -> Void) {
-        let retainedSelf = Unmanaged.passRetained(self)
         guard !isActive else { return }
+        
+        // Need to make an Unmanaged instance to get an opaque pointer.
+        let retainedSelf = Unmanaged.passUnretained(self)
         self.callback = callback
         isActive = true
         let result = rtlsdr_read_async(self.device, rtlsdr_handler, retainedSelf.toOpaque(), wBUF_NUM, wBUF_LEN)
+        
         self.isActive = false
         print("Async read ended, code: \(result)")
-        retainedSelf.release()
     }
     
     func stopAsyncRead() {

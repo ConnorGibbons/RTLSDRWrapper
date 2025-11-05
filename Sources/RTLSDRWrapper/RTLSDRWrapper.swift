@@ -4,6 +4,17 @@ import Accelerate
 // More general discovery funcs not requiring a device pointer
 public enum SDRProbe {
     
+    /// List out device names of connected RTL-SDRs.
+    public static func listDevices() -> [String] {
+        var deviceNames: [String] = []
+        for i in 0..<getDeviceCount() {
+            if let deviceName = getDeviceName(index: i) {
+                deviceNames.append(deviceName)
+            }
+        }
+        return deviceNames
+    }
+    
     /// Gets the number of RTL-SDR devices connected.
     public static func getDeviceCount() -> Int {
         return Int(CRTLSDR.rtlsdr_get_device_count())

@@ -38,7 +38,7 @@ preferable because it works as expected in all quadrants, unlike atan(im/real).
 ---
 
 ### func **vDSPfmDemod**
-This is intended to give you similar output to fmDemod, but much faster as it uses functions from
+This is intended to give you identical output to fmDemod, but much faster as it uses functions from
 Apple's Accelerate library. 
 It looks intimidating, but it's actually not bad:
 

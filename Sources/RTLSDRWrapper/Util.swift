@@ -143,7 +143,8 @@ public func vDSPfmDemodv2(_ samples: [DSPComplex]) -> [Float] {
     return diffs
 }
 
-
+/// Convenient struct for timing duration of tasks.
+/// Starts on init; stops when .stop() is called.
 public struct TimeOperation {
     var t0: DispatchTime
     var t1: DispatchTime
@@ -156,10 +157,11 @@ public struct TimeOperation {
         self.start()
     }
     
-    public mutating func start() {
+    private mutating func start() {
         t0 = .now()
     }
     
+    /// Stops timer, returns a string of format: "operationName took (time) ms"
     public mutating func stop() -> String {
         defer {
             t0 = .distantFuture
